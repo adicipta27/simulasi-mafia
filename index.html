@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulasi Mafia Indonesia - Turf War Edition</title>
+    <title>Simulasi Mafia Indonesia - Kartel Daerah</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Auth Modal Overlay -->
+    <!-- Modal Login / Register -->
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-card">
             <h2 class="gold-text">KARTEL MAFIA INDONESIA</h2>
@@ -35,46 +35,91 @@
         </div>
     </div>
 
-    <!-- Random Event Modal -->
+    <!-- Modal Pilihan Wilayah Awal (Revisi #3) -->
+    <div id="setup-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2 class="gold-text">PILIH BASECAMP MAFIA</h2>
+            <p class="subtitle">Pilih provinsi & kota awal untuk memulai karir kriminal Anda!</p>
+
+            <div class="form-group">
+                <label>Pilih Provinsi Awal</label>
+                <select id="setup-province-select" onchange="onProvinceSelectChange()"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Pilih Kota Awal</label>
+                <select id="setup-city-select"></select>
+            </div>
+
+            <button class="btn btn-gold full-btn" onclick="submitInitialSetup()">MEMULAI KARIR MAFIA</button>
+        </div>
+    </div>
+
+    <!-- Modal Event Acak (Revisi #1 & #11) -->
     <div id="event-modal" class="modal-overlay hidden">
         <div class="modal-card event-card">
             <h3 class="gold-text" id="event-title">EVENT ACAK</h3>
-            <p id="event-desc">Deskripsi event acak...</p>
+            <p id="event-desc">Deskripsi event...</p>
             <div id="event-choices" class="event-choices"></div>
         </div>
     </div>
 
-    <!-- Main Game UI -->
+    <!-- Modal Penjara Pemain (Revisi #10) -->
+    <div id="jail-modal" class="modal-overlay hidden">
+        <div class="modal-card event-card border-red">
+            <h2 class="text-red">Anda Ditangkap Polisi!</h2>
+            <p id="jail-desc">Anda sedang mendekam di tahanan Polda...</p>
+            <div class="jail-timer">Sisa Waktu Penjara: <strong id="jail-timer-count" class="text-yellow">0</strong> detik</div>
+            
+            <div class="jail-actions">
+                <button class="btn btn-gold full-btn" onclick="jailBribe100()">Suap 100% Bebas Instan (Sangat Mahal)</button>
+                <button class="btn btn-blue full-btn" onclick="jailLawyer()">Sewa Pengacara (Biaya Sedang, Peluang Kecil)</button>
+                <button class="btn btn-red full-btn" onclick="jailBreakout()">Operasi Anak Buah (Biaya Murah, Berisiko Ditangkap)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Interface -->
     <div id="game-container" class="hidden">
-        <!-- Top Bar Header -->
+        
+        <!-- Header TopBar -->
         <header class="topbar">
             <div class="player-info">
-                <h2 id="player-title" class="gold-text">Preman Pasar</h2>
+                <div>
+                    <h2 id="player-title" class="gold-text">Preman Pasar</h2>
+                    <small id="player-location-badge" class="text-blue">Lokasi: -</small>
+                </div>
                 <div class="user-badge">
                     <span id="user-display-name">Username</span>
+                    <button onclick="resetGameProgress()" class="btn-xs btn-danger" style="margin-right: 5px;">Reset Game</button>
                     <button onclick="logout()" class="btn-xs btn-danger">Keluar</button>
                 </div>
             </div>
 
+            <!-- Stats Engine Bar (Revisi #9) -->
             <div class="stats-bar">
                 <div class="stat-box">
                     <span class="stat-label">KAS SINDIKAT</span>
                     <span id="stat-money" class="stat-value text-green">Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">REPUTASI</span>
-                    <span id="stat-rep" class="stat-value text-yellow">0 RP</span>
+                    <span class="stat-label">PEMASUKAN ( / 10dtk )</span>
+                    <span id="stat-income" class="stat-value text-green">+Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">NET GAJI (/detik)</span>
-                    <span id="stat-income" class="stat-value text-blue">+Rp 0</span>
+                    <span class="stat-label">UPAH ANAK BUAH ( / 10dtk )</span>
+                    <span id="stat-expenses" class="stat-value text-red">-Rp 0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">NET KAS ( / 10dtk )</span>
+                    <span id="stat-net" class="stat-value text-blue">Rp 0</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-label">ANAK BUAH</span>
                     <span id="stat-members" class="stat-value">0 Orang</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">POWER TEMPUR</span>
+                    <span class="stat-label">TOTAL POWER</span>
                     <span id="stat-power" class="stat-value text-red">0 PWR</span>
                 </div>
                 <div class="stat-box">
@@ -85,94 +130,121 @@
             </div>
         </header>
 
-        <!-- Navigation Tabs -->
+        <!-- Dynamic Navigation Tabs -->
         <nav class="nav-tabs">
-            <button class="nav-btn active" onclick="switchTab('turf-tab')">🗺️ Peta Wilayah (Turf)</button>
+            <button class="nav-btn active" onclick="switchTab('assistant-tab')">🎙️ Laporan Asisten</button>
+            <button class="nav-btn" onclick="switchTab('turf-tab')">🗺️ Peta Wilayah</button>
             <button class="nav-btn" onclick="switchTab('crimes-tab')">🔪 Aksi Kriminal</button>
             <button class="nav-btn" onclick="switchTab('business-tab')">🏢 Bisnis Haram</button>
-            <button class="nav-btn" onclick="switchTab('rivals-tab')">⚔️ Perang Geng</button>
-            <button class="nav-btn" onclick="switchTab('loan-tab')">🏦 Rentenir & Kas</button>
+            <button class="nav-btn" onclick="switchTab('rivals-tab')">⚔️ Pasukan & Pecat</button>
+            <button class="nav-btn" onclick="switchTab('expedition-tab')">🚚 Ekspedisi Penyelundupan</button>
+            <button class="nav-btn" onclick="switchTab('social-tab')">🤝 Ormas & Suap</button>
         </nav>
 
-        <!-- Main Content Screens -->
+        <!-- Main Workspace -->
         <main class="content-body">
             
-            <!-- TURF WAR MAP TAB -->
-            <section id="turf-tab" class="tab-content active">
-                <div class="turf-header">
-                    <h3>PETA DOMINASI WILAYAH INDONESIA</h3>
-                    <p>Kuasai wilayah untuk mendapatkan bonus Passive Income & Reputasi harian!</p>
+            <!-- TAB 1: ASISTEN PRIBADI (Revisi #13) -->
+            <section id="assistant-tab" class="tab-content active">
+                <div class="assistant-card">
+                    <div class="assistant-avatar">💼</div>
+                    <div class="assistant-speech">
+                        <h4 id="assistant-name">Bambang - Asisten Keamanan</h4>
+                        <p id="assistant-message">"Laporan hari ini Boss! Operasi kita berjalan lancar. Pantau tab peta wilayah untuk ekspansi baru."</p>
+                    </div>
                 </div>
+
+                <!-- Tahanan Anak Buah (Revisi #10) -->
+                <div class="jail-subpanel">
+                    <h4>Anak Buah Ditahan Polisi (<span id="jailed-members-count">0</span> Orang)</h4>
+                    <div id="jailed-members-list" class="jailed-list"></div>
+                </div>
+            </section>
+
+            <!-- TAB 2: PETA WILAYAH (Revisi #3, #4, #5, #7) -->
+            <section id="turf-tab" class="tab-content">
+                <div class="turf-header">
+                    <h3>PETA DOMINASI PROVINSI & KOTA</h3>
+                    <p>Pilih Provinsi & Taklukkan seluruh kota di dalamnya sebelum membuka provinsi baru!</p>
+
+                    <div class="province-selector-bar">
+                        <label>Pilih Provinsi View: </label>
+                        <select id="province-view-select" onchange="renderTurfMap()"></select>
+                    </div>
+                </div>
+
                 <div class="turf-map-container">
                     <div class="map-grid" id="turf-map-grid"></div>
                 </div>
-                <div class="turf-legend">
-                    <span class="legend-item"><span class="color-dot my-gang"></span> Hijau: Geng Anda</span>
-                    <span class="legend-item"><span class="color-dot enemy-1"></span> Merah: Geng Kampung Atas</span>
-                    <span class="legend-item"><span class="color-dot enemy-2"></span> Kuning: Ormas Banteng Hitam</span>
-                    <span class="legend-item"><span class="color-dot enemy-3"></span> Ungu: Kartel Batavia</span>
-                </div>
             </section>
 
-            <!-- CRIMES TAB -->
+            <!-- TAB 3: AKSI KRIMINAL (Revisi #6) -->
             <section id="crimes-tab" class="tab-content">
-                <h3>AKSI KRIMINAL MANUAL</h3>
-                <p>Kumpulkan kas awal dan reputasi secara instan. Aksi kriminal akan menaikkan Heat Level!</p>
+                <h3>AKSI KRIMINAL MANUVAL</h3>
+                <p>Eksekusi aksi kejahatan di Indonesia berdasarkan jumlah anak buah & Power Tempur!</p>
                 <div class="card-grid" id="crimes-list"></div>
             </section>
 
-            <!-- BUSINESS TAB -->
+            <!-- TAB 4: BISNIS HARAM (Revisi #8) -->
             <section id="business-tab" class="tab-content">
-                <h3>SISTEM BISNIS HARAM & PASIF</h3>
-                <p>Beli dan kembangkan sektor bisnis untuk memberikan pemasukan otomatis setiap detik.</p>
+                <h3>BISNIS HARAM & PASIF</h3>
+                <p>Investasikan kas untuk mendapatkan passive income setiap 10 detik sekali!</p>
                 <div class="card-grid" id="business-list"></div>
             </section>
 
-            <!-- RIVALS TAB -->
+            <!-- TAB 5: REKRUT & PECAT PASUKAN (Revisi #12) -->
             <section id="rivals-tab" class="tab-content">
-                <h3>PERANG GENG & REKRUTMEN PASUKAN</h3>
+                <h3>MANAJEMEN PASUKAN & PECAT</h3>
                 <div class="recruitment-banner">
-                    <h4>Rekrut Pasukan & Armada</h4>
+                    <h4>Merekrut & Beli Senjata</h4>
                     <div class="recruit-controls">
-                        <button class="btn btn-gold" onclick="buyMember()">Rekrut Anak Buah (+1) - Rp 500.000</button>
-                        <button class="btn btn-red" onclick="buyWeapon()">Beli Senjata (+1) - Rp 1.500.000</button>
+                        <button class="btn btn-gold" onclick="buyMember()">Rekrut Anak Buah (+1, Power 1-5 Random) - Rp 500.000</button>
+                        <button class="btn btn-red" onclick="buyWeapon()">Beli Senjata (+1, +20 Power) - Rp 2.000.000</button>
                     </div>
                 </div>
-                <div class="rivals-grid" id="rivals-list"></div>
+
+                <h4 style="margin-top:20px;">Daftar Anak Buah Aktif (Pecat untuk Mengurangi Beban Gaji)</h4>
+                <div id="members-list-grid" class="card-grid"></div>
             </section>
 
-            <!-- LOAN & CASH TAB -->
-            <section id="loan-tab" class="tab-content">
-                <h3>PINJAMAN DANA DARURAT & PENURUNAN HEAT</h3>
+            <!-- TAB 6: EKSPEDISI PENYELUNDUPAN (Revisi #14) -->
+            <section id="expedition-tab" class="tab-content">
+                <h3>EKSPEDISI PENYELUNDUPAN LINTAS KOTA / PROVINSI</h3>
+                <p>Kirim penyelundupan barang haram lintas pulau dengan risiko penangkapan Polairud atau pembajakan geng!</p>
+                <div class="card-grid" id="expeditions-list"></div>
+
+                <h4 style="margin-top:25px;">Misi Penyelundupan Berjalan</h4>
+                <div id="active-expeditions-list" class="card-grid"></div>
+            </section>
+
+            <!-- TAB 7: ORMAS & SUAP HEAT LEVEL (Revisi #15) -->
+            <section id="social-tab" class="tab-content">
+                <h3>PENURUNAN HEAT LEVEL & DONASI ORMAS</h3>
                 <div class="loan-container">
                     <div class="loan-card">
-                        <h4>Pinjaman Tengkulak Darurat</h4>
-                        <p>Pinjam kas instan saat keuangan sekarat. Bunga berjalan per detik!</p>
-                        <p>Hutang Saat Ini: <strong id="loan-amount" class="text-red">Rp 0</strong></p>
-                        <div class="loan-actions">
-                            <button class="btn btn-gold" onclick="takeLoan(10000000)">Pinjam Rp 10.000.000</button>
-                            <button class="btn btn-gold" onclick="takeLoan(50000000)">Pinjam Rp 50.000.000</button>
-                            <button class="btn btn-green" onclick="payLoan()">Lunasi Hutang</button>
-                        </div>
+                        <h4>Donasi Kegiatan Sosial & Ormas</h4>
+                        <p>Mengadakan bakti sosial fiktif untuk mencuci nama baik sindikat Anda di mata publik.</p>
+                        <button class="btn btn-green full-btn" onclick="donateOrmas()">Donasi Bakti Sosial (Rp 3.000.000) -> Heat -15%</button>
                     </div>
+
                     <div class="loan-card">
-                        <h4>Penurunan Heat & Suap Oknum</h4>
-                        <p>Bersihkan nama baik atau bayar oknum untuk menurunkan risiko penggerebekan.</p>
-                        <button class="btn btn-blue" onclick="bribePolice()">Suap Oknum (Rp 5.000.000) -> -20% Heat</button>
+                        <h4>Suap Oknum Aparat & Pengacara</h4>
+                        <p>Bayar oknum untuk menghapus laporan kejahatan di Kepolisian.</p>
+                        <button class="btn btn-blue full-btn" onclick="bribePolice()">Suap Oknum (Rp 8.000.000) -> Heat -25%</button>
                     </div>
                 </div>
             </section>
 
         </main>
 
-        <!-- Bottom Log Window -->
+        <!-- Footer Log Terminal -->
         <footer class="log-footer">
-            <div class="log-title">CATATAN OPERASIONAL & EVENT</div>
+            <div class="log-title">CATATAN OPERASIONAL SINDIKAT</div>
             <div id="game-logs" class="logs-body"></div>
         </footer>
     </div>
 
-    <!-- Firebase SDK (Modular v10 via CDN) -->
+    <!-- Firebase SDK v10 -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
