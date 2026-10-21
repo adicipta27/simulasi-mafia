@@ -121,8 +121,13 @@ body {
     transition: 0.2s;
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .btn-gold { background: var(--gold); color: #000; }
-.btn-gold:hover { background: var(--gold-hover); }
+.btn-gold:hover:not(:disabled) { background: var(--gold-hover); }
 .btn-red { background: var(--red); color: #fff; }
 .btn-green { background: var(--green); color: #fff; }
 .btn-blue { background: var(--blue); color: #fff; }
