@@ -96,7 +96,7 @@
                 </div>
             </div>
 
-            <!-- Stats Engine Bar dengan Timer Update 15s (Revisi #1) -->
+            <!-- Stats Bar (Timer Update 1 Menit) -->
             <div class="stats-bar">
                 <div class="stat-box">
                     <span class="stat-label">KAS SINDIKAT</span>
@@ -104,18 +104,18 @@
                 </div>
                 <div class="stat-box">
                     <span class="stat-label">TIMER CAIR KAS</span>
-                    <span id="stat-timer-15s" class="stat-value text-yellow">15 detik</span>
+                    <span id="stat-timer-60s" class="stat-value text-yellow">60s</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">PEMASUKAN ( / 15dtk )</span>
+                    <span class="stat-label">PEMASUKAN ( / 1 mnt )</span>
                     <span id="stat-income" class="stat-value text-green">+Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">UPAH ANAK ( / 15dtk )</span>
+                    <span class="stat-label">UPAH ANAK ( / 1 mnt )</span>
                     <span id="stat-expenses" class="stat-value text-red">-Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">NET KAS ( / 15dtk )</span>
+                    <span class="stat-label">NET KAS ( / 1 mnt )</span>
                     <span id="stat-net" class="stat-value text-blue">Rp 0</span>
                 </div>
                 <div class="stat-box">
@@ -142,6 +142,7 @@
             <button class="nav-btn" onclick="switchTab('business-tab')">🏢 Bisnis Haram</button>
             <button class="nav-btn" onclick="switchTab('rivals-tab')">⚔️ Pasukan & Pecat</button>
             <button class="nav-btn" onclick="switchTab('expedition-tab')">🚚 Ekspedisi Penyelundupan</button>
+            <button class="nav-btn" onclick="switchTab('global-tab')">✈️ Ekspansi Luar Negeri</button>
             <button class="nav-btn" onclick="switchTab('social-tab')">🤝 Ormas & Suap</button>
         </nav>
 
@@ -154,11 +155,10 @@
                     <div class="assistant-avatar">💼</div>
                     <div class="assistant-speech">
                         <h4 id="assistant-name">Bambang - Asisten Keamanan</h4>
-                        <p id="assistant-message">"Laporan hari ini Boss! Operasi kita berjalan lancar. Pantau tab peta wilayah untuk ekspansi baru."</p>
+                        <p id="assistant-message">"Laporan hari ini Boss! Operasi berjalan lancar. Perhatikan waktu pencairan kas setiap 1 menit sekali."</p>
                     </div>
                 </div>
 
-                <!-- Tahanan Anak Buah -->
                 <div class="jail-subpanel">
                     <h4>Anak Buah Ditahan Polisi (<span id="jailed-members-count">0</span> Orang)</h4>
                     <div id="jailed-members-list" class="jailed-list"></div>
@@ -168,8 +168,8 @@
             <!-- TAB 2: PETA WILAYAH -->
             <section id="turf-tab" class="tab-content">
                 <div class="turf-header">
-                    <h3>PETA DOMINASI PROVINSI & KOTA</h3>
-                    <p>Pilih Provinsi & Taklukkan seluruh kota di dalamnya sebelum membuka provinsi baru!</p>
+                    <h3>PETA DOMINASI PROVINSI & KOTA INDONESIA</h3>
+                    <p>Kuasai seluruh kota di provinsi asal sebelum mengekspansi provinsi berikutnya!</p>
 
                     <div class="province-selector-bar">
                         <label>Pilih Provinsi View: </label>
@@ -184,26 +184,26 @@
 
             <!-- TAB 3: AKSI KRIMINAL -->
             <section id="crimes-tab" class="tab-content">
-                <h3>AKSI KRIMINAL MANUVAL</h3>
-                <p>Eksekusi aksi kejahatan di Indonesia berdasarkan jumlah anak buah & Power Tempur!</p>
+                <h3>AKSI KRIMINAL MANUAL (DENGAN WAKTU PROSES)</h3>
+                <p>Setiap aksi membutuhkan waktu eksekusi nyata sebelum hasilnya diketahui!</p>
                 <div class="card-grid" id="crimes-list"></div>
             </section>
 
             <!-- TAB 4: BISNIS HARAM -->
             <section id="business-tab" class="tab-content">
                 <h3>BISNIS HARAM & PASIF</h3>
-                <p>Investasikan kas untuk mendapatkan passive income setiap 15 detik sekali!</p>
+                <p>Investasikan modal kas untuk pendapatan pasif yang cair setiap 1 menit sekali!</p>
                 <div class="card-grid" id="business-list"></div>
             </section>
 
             <!-- TAB 5: REKRUT & PECAT PASUKAN -->
             <section id="rivals-tab" class="tab-content">
-                <h3>MANAJEMEN PASUKAN & PECAT</h3>
+                <h3>MANAJEMEN PASUKAN & SENJATA</h3>
                 <div class="recruitment-banner">
                     <h4>Merekrut & Beli Senjata</h4>
                     <div class="recruit-controls">
-                        <button class="btn btn-gold" onclick="buyMember()">Rekrut Anak Buah (+1, Power 1-5 Random) - Rp 500.000</button>
-                        <button class="btn btn-red" onclick="buyWeapon()">Beli Senjata (+1, +20 Power) - Rp 2.000.000</button>
+                        <button class="btn btn-gold" onclick="buyMember()">Rekrut Anak Buah (+1, Power 1-5 Random) - Rp 2.500.000</button>
+                        <button class="btn btn-red" onclick="buyWeapon()">Beli Senjata (+1, +25 Power) - Rp 10.000.000</button>
                     </div>
                 </div>
 
@@ -214,27 +214,34 @@
             <!-- TAB 6: EKSPEDISI PENYELUNDUPAN -->
             <section id="expedition-tab" class="tab-content">
                 <h3>EKSPEDISI PENYELUNDUPAN LINTAS KOTA / PROVINSI</h3>
-                <p>Kirim penyelundupan barang haram lintas pulau dengan risiko penangkapan Polairud atau pembajakan geng!</p>
+                <p>Hanya 1 ekspedisi yang bisa berjalan dalam satu waktu! Risiko gagal meliputi ganti rugi barang atau anggota mati/ditangkap.</p>
                 <div class="card-grid" id="expeditions-list"></div>
 
                 <h4 style="margin-top:25px;">Misi Penyelundupan Berjalan</h4>
                 <div id="active-expeditions-list" class="card-grid"></div>
             </section>
 
-            <!-- TAB 7: ORMAS & SUAP HEAT LEVEL -->
+            <!-- TAB 7: EKSPANSI LUAR NEGERI -->
+            <section id="global-tab" class="tab-content">
+                <h3>EKSPANSI KARTER INTERNASIONAL (SEASON END-GAME)</h3>
+                <p id="global-status-desc">Kuasai seluruh 6 Provinsi di Indonesia terlebih dahulu untuk membuka akses ke kartel internasional!</p>
+                <div class="card-grid" id="global-targets-list"></div>
+            </section>
+
+            <!-- TAB 8: ORMAS & SUAP HEAT LEVEL -->
             <section id="social-tab" class="tab-content">
                 <h3>PENURUNAN HEAT LEVEL & DONASI ORMAS</h3>
                 <div class="loan-container">
                     <div class="loan-card">
                         <h4>Donasi Kegiatan Sosial & Ormas</h4>
-                        <p>Mengadakan bakti sosial fiktif untuk mencuci nama baik sindikat Anda di mata publik.</p>
-                        <button class="btn btn-green full-btn" onclick="donateOrmas()">Donasi Bakti Sosial (Rp 3.000.000) -> Heat -15%</button>
+                        <p>Mengadakan bakti sosial fiktif untuk mencuci nama baik sindikat Anda.</p>
+                        <button class="btn btn-green full-btn" onclick="donateOrmas()">Donasi Bakti Sosial (Rp 15.000.000) -> Heat -15%</button>
                     </div>
 
                     <div class="loan-card">
                         <h4>Suap Oknum Aparat & Pengacara</h4>
                         <p>Bayar oknum untuk menghapus laporan kejahatan di Kepolisian.</p>
-                        <button class="btn btn-blue full-btn" onclick="bribePolice()">Suap Oknum (Rp 8.000.000) -> Heat -25%</button>
+                        <button class="btn btn-blue full-btn" onclick="bribePolice()">Suap Oknum (Rp 40.000.000) -> Heat -25%</button>
                     </div>
                 </div>
             </section>
