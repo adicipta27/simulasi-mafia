@@ -13,7 +13,7 @@ import {
     setDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// KREDENSIAL FIREBASE MILIK ANDA
+// KREDENSIAL FIREBASE EMBEDDED
 const firebaseConfig = {
     apiKey: "AIzaSyBf4r0ZYllayZq8pvtxj00uz6DghMRjJtg",
     authDomain: "simulasi-mafia.firebaseapp.com",
@@ -27,85 +27,94 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// STATE GAME DEFAULT
+// DATA WILAYAH INDONESIA (6 PROVINSI, KOTA, & MAFIA (Revisi #3 & #7))
+const PROVINCES = [
+    { id: 'dki', name: 'DKI Jakarta', minPower: 0, cities: ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Barat', 'Jakarta Utara', 'Jakarta Timur'] },
+    { id: 'jabar', name: 'Jawa Barat', minPower: 100, cities: ['Bandung', 'Bekasi', 'Depok', 'Bogor', 'Cirebon', 'Sukabumi'] },
+    { id: 'jateng', name: 'Jawa Tengah', minPower: 300, cities: ['Semarang', 'Solo', 'Magelang', 'Tegal', 'Pekalongan', 'Cilacap'] },
+    { id: 'jatim', name: 'Jawa Timur', minPower: 600, cities: ['Surabaya', 'Malang', 'Kediri', 'Madiun', 'Banyuwangi', 'Probolinggo'] },
+    { id: 'sumut', name: 'Sumatera Utara', minPower: 1000, cities: ['Medan', 'Pematangsiantar', 'Binjai', 'Tanjungbalai', 'Tebing Tinggi'] },
+    { id: 'sulsel', name: 'Sulawesi Selatan', minPower: 1500, cities: ['Makassar', 'Palopo', 'Parepare', 'Toraja', 'Bone'] }
+];
+
+const RIVAL_NAMES = ['Geng Banteng Merah', 'Kartel Batavia', 'Ormas Pesisir', 'Mafia Port', 'Sindikat Hitam', 'Geng Kampung Atas'];
+
+// AKSI KRIMINAL BERBAGAI TINGKAT (Revisi #6)
+const CRIMES_DATA = [
+    { id: 'parkir_liar', name: 'Pungli Parkir Liar', minMembers: 1, minPower: 0, reward: 200000, rep: 2, heat: 3 },
+    { id: 'peras_pasar', name: 'Peras Pedagang Pasar', minMembers: 2, minPower: 10, reward: 600000, rep: 5, heat: 5 },
+    { id: 'begal', name: 'Begal Motor Malam', minMembers: 3, minPower: 25, reward: 1800000, rep: 10, heat: 8 },
+    { id: 'judi_online', name: 'Markas Judi Online Tersembunyi', minMembers: 5, minPower: 60, reward: 5000000, rep: 20, heat: 12 },
+    { id: 'rampok_toko', name: 'Perampokan Toko Emas', minMembers: 8, minPower: 120, reward: 15000000, rep: 40, heat: 18 },
+    { id: 'penyelundupan_bbm', name: 'Penyelundupan BBM Subsidi', minMembers: 12, minPower: 250, reward: 45000000, rep: 80, heat: 25 }
+];
+
+// BISNIS HARAM VARIANTS (Revisi #8)
+const BUSINESS_DATA = [
+    { id: 'warung_remang', name: 'Warung Remang-Remang', cost: 3000000, income: 40000 },
+    { id: 'gelanggang_ayam', name: 'Arena Judi Sabung Ayam', cost: 12000000, income: 180000 },
+    { id: 'bengkel_pretelan', name: 'Bengkel Motor Pretelan', cost: 35000000, income: 550000 },
+    { id: 'club_malam', name: 'Diskotek & Bar Malam', cost: 120000000, income: 2000000 },
+    { id: 'kasino_gelap', name: 'Kasino Gelap Bawah Tanah', cost: 500000000, income: 9000000 }
+];
+
+// EKSPEDISI PENYELUNDUPAN (Revisi #14)
+const EXPEDITION_TYPES = [
+    { id: 'truk_lintas', name: 'Penyelundupan Truk Lintas Jawa', durationSec: 45, reward: 25000000, risk: 0.3 },
+    { id: 'kapal_feri', name: 'Kapal Feri Gelap Jawa-Sumatera', durationSec: 90, reward: 75000000, risk: 0.4 },
+    { id: 'kontainer_laut', name: 'Kontainer Laut Lintas Pulau', durationSec: 180, reward: 220000000, risk: 0.5 }
+];
+
+// STATE GAME
 let currentUser = null;
 let currentAuthMode = 'login';
 
 let gameState = {
-    money: 1000000,
-    reputation: 0,
-    members: 1,
+    setupDone: false,
+    homeProvince: 'dki',
+    homeCity: 'Jakarta Pusat',
+    money: 2000000, // Modal awal (Revisi #2)
     weapons: 0,
+    reputation: 0,
     heat: 0,
-    loan: 0,
-    businesses: { parkir: 0, warung: 0, club: 0, sabung: 0 },
-    turfs: {
-        'dki': 'player',
-        'jabar': 'enemy-1',
-        'jateng': 'enemy-2',
-        'jatim': 'enemy-3',
-        'sumatera': 'enemy-1'
-    }
+    isJailed: false,
+    jailTimerSec: 0,
+    members: [], // [{ id, power }] (Revisi #12)
+    jailedMembers: [], // [{ id, power, timerSec }] (Revisi #10)
+    businesses: {},
+    controlledCities: {}, // { 'Jakarta Pusat': true } (Revisi #4 & #5)
+    activeExpeditions: [] // [{ id, typeId, endTime }]
 };
-
-const RANKS = [
-    { name: "Preman Pasar", minRep: 0 },
-    { name: "Kepala Keamanan", minRep: 100 },
-    { name: "Bos Ormas", minRep: 500 },
-    { name: "Ketua Kartel", minRep: 2000 },
-    { name: "Don Sindikat", minRep: 10000 }
-];
-
-const CRIMES = [
-    { id: 'peras', name: 'Peras Pedagang Pasar', rewardMoney: 150000, rewardRep: 2, heat: 3 },
-    { id: 'begal', name: 'Begal Motor Jalanan', rewardMoney: 500000, rewardRep: 5, heat: 8 },
-    { id: 'penyelundupan', name: 'Penyelundupan Barang Bekas', rewardMoney: 2000000, rewardRep: 15, heat: 18 }
-];
-
-const BUSINESS_DATA = [
-    { id: 'parkir', name: 'Lahan Parkir Liar', cost: 2000000, income: 15000 },
-    { id: 'warung', name: 'Warung Remang-Remang', cost: 10000000, income: 80000 },
-    { id: 'club', name: 'Club Malam & Bar', cost: 50000000, income: 450000 },
-    { id: 'sabung', name: 'Arena Judi Sabung Ayam', cost: 250000000, income: 2500000 }
-];
-
-const RIVALS_DATA = [
-    { id: 'enemy-1', name: 'Geng Kampung Atas', power: 25 },
-    { id: 'enemy-2', name: 'Ormas Banteng Hitam', power: 80 },
-    { id: 'enemy-3', name: 'Kartel Batavia', power: 250 }
-];
-
-const TURF_DATA = [
-    { id: 'dki', name: 'DKI Jakarta & Banten', bonus: 100000 },
-    { id: 'jabar', name: 'Jawa Barat', bonus: 80000 },
-    { id: 'jateng', name: 'Jawa Tengah & DIY', bonus: 70000 },
-    { id: 'jatim', name: 'Jawa Timur & Bali', bonus: 90000 },
-    { id: 'sumatera', name: 'Sumatera & Kalimantan', bonus: 120000 }
-];
 
 // INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
     setupAuthListeners();
-    renderCrimes();
-    renderBusiness();
-    renderRivals();
-    
-    // Ticker Loops
-    setInterval(gameLoop, 1000);
-    setInterval(cloudAutosave, 12000);
-    setInterval(triggerRandomEvent, 35000);
+    populateSetupSelects();
+
+    // Game Tickers
+    setInterval(gameLoop10Sec, 10000); // Ticker 10 Detik (Revisi #9)
+    setInterval(jailTicker, 1000);
+    setInterval(expeditionTicker, 1000);
+    setInterval(cloudAutosave, 15000);
+
+    // Random Event Timer (1 sampai 5 menit) (Revisi #1)
+    scheduleNextRandomEvent();
 });
 
-// AUTHENTICATION SYSTEM
+// AUTH SYSTEM
 function setupAuthListeners() {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
             document.getElementById('auth-modal').classList.add('hidden');
-            document.getElementById('game-container').classList.remove('hidden');
-            document.getElementById('user-display-name').innerText = user.email.split('@')[0];
             await loadUserData();
-            logMessage(`Selamat datang kembali, Boss ${user.email.split('@')[0]}!`, 'success');
+
+            if (!gameState.setupDone) {
+                document.getElementById('setup-modal').classList.remove('hidden');
+            } else {
+                document.getElementById('game-container').classList.remove('hidden');
+                initUI();
+            }
         } else {
             currentUser = null;
             document.getElementById('auth-modal').classList.remove('hidden');
@@ -135,6 +144,11 @@ window.handleAuthSubmit = async function(e) {
             await signInWithEmailAndPassword(auth, email, password);
         } else {
             await createUserWithEmailAndPassword(auth, email, password);
+            // Default 2 Anak Buah Awal (Revisi #2)
+            gameState.members = [
+                { id: Date.now() + 1, power: Math.floor(Math.random() * 5) + 1 },
+                { id: Date.now() + 2, power: Math.floor(Math.random() * 5) + 1 }
+            ];
             await cloudAutosave();
         }
     } catch (err) {
@@ -142,19 +156,63 @@ window.handleAuthSubmit = async function(e) {
     }
 };
 
-window.logout = function() {
-    signOut(auth);
+window.logout = function() { signOut(auth); };
+
+// SETUP AWAL WILAYAH (Revisi #3)
+function populateSetupSelects() {
+    const pSelect = document.getElementById('setup-province-select');
+    if (!pSelect) return;
+    pSelect.innerHTML = '';
+
+    PROVINCES.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.innerText = p.name;
+        pSelect.appendChild(opt);
+    });
+    onProvinceSelectChange();
+}
+
+window.onProvinceSelectChange = function() {
+    const pSelect = document.getElementById('setup-province-select');
+    const cSelect = document.getElementById('setup-city-select');
+    const prov = PROVINCES.find(p => p.id === pSelect.value);
+    cSelect.innerHTML = '';
+
+    if (prov) {
+        prov.cities.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.innerText = c;
+            cSelect.appendChild(opt);
+        });
+    }
+};
+
+window.submitInitialSetup = async function() {
+    const pId = document.getElementById('setup-province-select').value;
+    const cName = document.getElementById('setup-city-select').value;
+
+    gameState.homeProvince = pId;
+    gameState.homeCity = cName;
+    gameState.controlledCities[cName] = true; // Kota awal terkuasai (Revisi #2 & #4)
+    gameState.setupDone = true;
+
+    document.getElementById('setup-modal').classList.add('hidden');
+    document.getElementById('game-container').classList.remove('hidden');
+
+    await cloudAutosave();
+    initUI();
+    setAssistantMessage(`Selamat datang Boss! Kita telah mendirikan markas pertama kita di ${cName}, ${getProvinceObj(pId).name}. Mari kumpulkan uang dan rekrut anggota!`);
 };
 
 // FIRESTORE SYNC
 async function cloudAutosave() {
-    if (!currentUser) return;
+    if (!currentUser || !gameState.setupDone) return;
     try {
         await setDoc(doc(db, "users", currentUser.uid), gameState, { merge: true });
-        logMessage("Progress otomatis tersimpan di Cloud Firestore.", "success");
-    } catch (err) {
-        console.error("Autosave error:", err);
-    }
+        logMessage("Autosave Cloud Firestore berhasil.", "success");
+    } catch (err) { console.error("Autosave error:", err); }
 }
 
 async function loadUserData() {
@@ -164,174 +222,235 @@ async function loadUserData() {
         if (docSnap.exists()) {
             gameState = { ...gameState, ...docSnap.data() };
         }
-        updateUI();
-    } catch (err) {
-        console.error("Load error:", err);
-    }
+    } catch (err) { console.error("Load error:", err); }
 }
 
-// GAME TICKER & CALCULATIONS
-function gameLoop() {
-    if (!currentUser) return;
+// GAME TICKER 10 DETIK (Revisi #9)
+function gameLoop10Sec() {
+    if (!currentUser || !gameState.setupDone || gameState.isJailed) return;
 
-    // Income Passive
-    let passiveIncome = 0;
-    BUSINESS_DATA.forEach(b => {
-        passiveIncome += (gameState.businesses[b.id] || 0) * b.income;
-    });
+    const income = calculateTotalIncome10Sec();
+    const expenses = calculateTotalExpenses10Sec();
+    const net = income - expenses;
 
-    // Turf Income Bonus
-    TURF_DATA.forEach(t => {
-        if (gameState.turfs[t.id] === 'player') {
-            passiveIncome += t.bonus;
-        }
-    });
+    gameState.money += net;
 
-    // Expenses (Gaji)
-    const expenses = gameState.members * 10000;
-    const netIncome = passiveIncome - expenses;
-
-    // Bunga Rentenir
-    if (gameState.loan > 0) {
-        gameState.loan += Math.floor(gameState.loan * 0.001);
-    }
-
-    gameState.money += netIncome;
     if (gameState.money < 0) {
         gameState.money = 0;
-        if (gameState.members > 1 && Math.random() < 0.2) {
-            gameState.members--;
-            logMessage("Kas kosong! 1 Anak buah kabur karena tidak digaji.", "danger");
+        if (gameState.members.length > 0 && Math.random() < 0.4) {
+            const removed = gameState.members.pop();
+            setAssistantMessage(`Uang kas minus! 1 anak buah (PWR ${removed.power}) kabur karena belum digaji!`);
+            logMessage("1 Anak buah kabur karena gaji menunggak!", "danger");
         }
     }
 
     updateUI();
 }
 
-function getPlayerPower() {
-    return (gameState.members * 10) + (gameState.weapons * 25);
+function calculateTotalIncome10Sec() {
+    let income = 0;
+    BUSINESS_DATA.forEach(b => {
+        income += (gameState.businesses[b.id] || 0) * b.income;
+    });
+
+    // Bonus Kota
+    const controlledCount = Object.keys(gameState.controlledCities).length;
+    income += controlledCount * 100000;
+    return income;
 }
 
-function getPlayerRank() {
-    let currentRank = RANKS[0].name;
-    for (let r of RANKS) {
-        if (gameState.reputation >= r.minRep) currentRank = r.name;
-    }
-    return currentRank;
+function calculateTotalExpenses10Sec() {
+    return gameState.members.length * 20000; // Upah per anak buah per 10 detik
 }
 
-// UI RENDERING & ACTIONS
+function getPlayerTotalPower() {
+    let pwr = gameState.weapons * 20;
+    gameState.members.forEach(m => pwr += m.power);
+    return pwr;
+}
+
+// UI RENDERING
+function initUI() {
+    populateProvinceViewSelect();
+    renderCrimes();
+    renderBusiness();
+    renderExpeditions();
+    updateUI();
+}
+
 function updateUI() {
-    document.getElementById('player-title').innerText = getPlayerRank();
+    if (!gameState.setupDone) return;
+
+    document.getElementById('user-display-name').innerText = currentUser ? currentUser.email.split('@')[0] : 'Boss';
+    document.getElementById('player-location-badge').innerText = `Basecamp: ${gameState.homeCity} (${getProvinceObj(gameState.homeProvince).name})`;
+
+    const income = calculateTotalIncome10Sec();
+    const expenses = calculateTotalExpenses10Sec();
+    const net = income - expenses;
+
     document.getElementById('stat-money').innerText = `Rp ${gameState.money.toLocaleString('id-ID')}`;
-    document.getElementById('stat-rep').innerText = `${gameState.reputation} RP`;
-    document.getElementById('stat-members').innerText = `${gameState.members} Orang`;
-    document.getElementById('stat-power').innerText = `${getPlayerPower()} PWR`;
+    document.getElementById('stat-income').innerText = `+Rp ${income.toLocaleString('id-ID')}`;
+    document.getElementById('stat-expenses').innerText = `-Rp ${expenses.toLocaleString('id-ID')}`;
+    document.getElementById('stat-net').innerText = `${net >= 0 ? '+' : ''}Rp ${net.toLocaleString('id-ID')}`;
+    document.getElementById('stat-net').className = `stat-value ${net >= 0 ? 'text-blue' : 'text-red'}`;
+
+    document.getElementById('stat-members').innerText = `${gameState.members.length} Orang`;
+    document.getElementById('stat-power').innerText = `${getPlayerTotalPower()} PWR`;
     document.getElementById('stat-heat').innerText = `${gameState.heat}%`;
     document.getElementById('heat-bar').style.width = `${gameState.heat}%`;
-    document.getElementById('loan-amount').innerText = `Rp ${gameState.loan.toLocaleString('id-ID')}`;
-
-    let passiveIncome = 0;
-    BUSINESS_DATA.forEach(b => passiveIncome += (gameState.businesses[b.id] || 0) * b.income);
-    TURF_DATA.forEach(t => {
-        if (gameState.turfs[t.id] === 'player') passiveIncome += t.bonus;
-    });
-    const expenses = gameState.members * 10000;
-    document.getElementById('stat-income').innerText = `${(passiveIncome - expenses) >= 0 ? '+' : ''}Rp ${(passiveIncome - expenses).toLocaleString('id-ID')}`;
 
     renderTurfMap();
+    renderMembersList();
+    renderJailedMembersList();
 }
 
-// TAB NAVIGATION
+function setAssistantMessage(msg) {
+    const el = document.getElementById('assistant-message');
+    if (el) el.innerText = `"${msg}"`;
+}
+
+// NAVIGATION
 window.switchTab = function(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
+    if (event && event.target) event.target.classList.add('active');
 };
 
-// TURF MAP SYSTEM
+// PETA WILAYAH (Revisi #3, #4, #5, #7)
+function populateProvinceViewSelect() {
+    const sel = document.getElementById('province-view-select');
+    if (!sel) return;
+    sel.innerHTML = '';
+    PROVINCES.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.innerText = p.name;
+        sel.appendChild(opt);
+    });
+    sel.value = gameState.homeProvince;
+}
+
 function renderTurfMap() {
     const grid = document.getElementById('turf-map-grid');
-    if (!grid) return;
+    const selProvId = document.getElementById('province-view-select') ? document.getElementById('province-view-select').value : gameState.homeProvince;
+    const prov = getProvinceObj(selProvId);
+    if (!grid || !prov) return;
+
     grid.innerHTML = '';
 
-    TURF_DATA.forEach(t => {
-        const owner = gameState.turfs[t.id] || 'enemy-1';
-        let ownerName = "Geng Musuh";
-        if (owner === 'player') ownerName = "Geng Anda";
-        else {
-            const r = RIVALS_DATA.find(x => x.id === owner);
-            if (r) ownerName = r.name;
-        }
+    // Cek apakah seluruh kota di provinsi asal pemain sudah dikuasai (Revisi #5)
+    const homeProvObj = getProvinceObj(gameState.homeProvince);
+    const homeProvAllControlled = homeProvObj.cities.every(c => gameState.controlledCities[c]);
 
+    const isLockedProv = (selProvId !== gameState.homeProvince) && (!homeProvAllControlled || getPlayerTotalPower() < prov.minPower);
+
+    prov.cities.forEach(cityName => {
+        const isControlled = gameState.controlledCities[cityName];
         const card = document.createElement('div');
-        card.className = `turf-card controlled-${owner}`;
+        card.className = `turf-card ${isControlled ? 'controlled-player' : 'controlled-enemy'} ${isLockedProv ? 'locked' : ''}`;
+
+        const rivalName = RIVAL_NAMES[Math.abs(hashCode(cityName)) % RIVAL_NAMES.length];
+
         card.innerHTML = `
-            <h4>${t.name}</h4>
-            <div class="turf-owner">Penguasa: <strong>${ownerName}</strong></div>
-            <p style="font-size: 0.8rem; color: #8c96a5;">Bonus: +Rp ${t.bonus.toLocaleString('id-ID')}/dtk</p>
-            ${owner !== 'player' ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="reclaimTurf('${t.id}')">Rebut Wilayah</button>` : `<span class="text-green" style="font-size:0.8rem;">✔ Terkuasai</span>`}
+            <h4>${cityName}</h4>
+            <p style="font-size:0.85rem;">Status: <strong>${isControlled ? 'Tergeng Anda' : 'Dikuasai ' + rivalName}</strong></p>
+            <p style="font-size:0.8rem; color:#8c96a5;">Bonus Kas: +Rp 100.000 / 10dtk</p>
+            ${isControlled ? '<span class="text-green" style="font-size:0.85rem;">✔ Terkuasai</span>' : 
+              isLockedProv ? `<small class="text-red">Kuasai seluruh ${homeProvObj.name} dulu! (Min${prov.minPower} PWR)</small>` :
+              `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="reclaimCity('${cityName}', '${selProvId}')">Serang & Rebut Kota</button>`}
         `;
         grid.appendChild(card);
     });
 }
 
-window.reclaimTurf = function(turfId) {
-    const pwr = getPlayerPower();
-    if (pwr < 50) {
-        alert("Power Tempur Anda terlalu lemah untuk merebut wilayah ini (Minimal 50 PWR)!");
+window.reclaimCity = function(cityName, provId) {
+    const prov = getProvinceObj(provId);
+    const myPwr = getPlayerTotalPower();
+    const reqPwr = prov.minPower + 30;
+
+    if (myPwr < reqPwr) {
+        alert(`Power Tempur Anda (${myPwr} PWR) kurang untuk merebut ${cityName}! Dibutuhkan minimal ${reqPwr} PWR.`);
         return;
     }
 
-    if (Math.random() < 0.65) {
-        gameState.turfs[turfId] = 'player';
-        gameState.reputation += 25;
-        logMessage(`BERHASIL! Anda merebut kontrol wilayah dari geng musuh!`, 'success');
+    if (Math.random() < 0.6) {
+        gameState.controlledCities[cityName] = true;
+        setAssistantMessage(`KABAR GEMBIRA BOSS! Kota ${cityName} berhasil ditaklukkan!`);
+        logMessage(`BERHASIL! Menyerang dan menguasai kota ${cityName}!`, 'success');
     } else {
-        gameState.members = Math.max(1, gameState.members - 2);
-        logMessage(`GAGAL! Serangan perebutan wilayah dibalas sengit. 2 Anggota gugur!`, 'danger');
+        if (gameState.members.length > 0) gameState.members.pop();
+        setAssistantMessage(`Gagal merebut kota ${cityName}! Pertahanan musuh sangat kuat, 1 anak buah kita gugur!`);
+        logMessage(`GAGAL! Serangan ke ${cityName} dipukul mundur. 1 Anak buah gugur.`, 'danger');
     }
     updateUI();
 };
 
-// CRIMES & BUSINESS
+// AKSI KRIMINAL (Revisi #6)
 function renderCrimes() {
     const container = document.getElementById('crimes-list');
     if (!container) return;
     container.innerHTML = '';
-    CRIMES.forEach(c => {
+
+    CRIMES_DATA.forEach(c => {
         const card = document.createElement('div');
         card.className = 'game-card';
         card.innerHTML = `
             <div>
                 <h4>${c.name}</h4>
-                <p>Hasil: +Rp ${c.rewardMoney.toLocaleString('id-ID')} | +${c.rewardRep} RP | +${c.heat}% Heat</p>
+                <p>Syarat: Min ${c.minMembers} Anak Buah, ${c.minPower} Power</p>
+                <p>Hasil: +Rp ${c.reward.toLocaleString('id-ID')} | Heat +${c.heat}%</p>
             </div>
-            <button class="btn btn-gold" onclick="doCrime('${c.id}')">Lakukan Aksi</button>
+            <button class="btn btn-gold" onclick="doCrime('${c.id}')">Eksekusi Aksi</button>
         `;
         container.appendChild(card);
     });
 }
 
 window.doCrime = function(crimeId) {
-    const crime = CRIMES.find(c => c.id === crimeId);
-    if (!crime) return;
+    if (gameState.isJailed) { alert("Anda sedang di dalam penjara!"); return; }
 
-    gameState.money += crime.rewardMoney;
-    gameState.reputation += crime.rewardRep;
-    gameState.heat = Math.min(100, gameState.heat + crime.heat);
+    const c = CRIMES_DATA.find(x => x.id === crimeId);
+    if (!c) return;
 
-    logMessage(`Aksi '${crime.name}' berhasil! (+Rp ${crime.rewardMoney.toLocaleString('id-ID')})`);
+    if (gameState.members.length < c.minMembers || getPlayerTotalPower() < c.minPower) {
+        alert(`Syarat tidak terpenuhi! Butuh min ${c.minMembers} anak buah dan ${c.minPower} PWR.`);
+        return;
+    }
+
+    // Chance Sukses
+    if (Math.random() < 0.75) {
+        gameState.money += c.reward;
+        gameState.heat = Math.min(100, gameState.heat + c.heat);
+        logMessage(`Aksi '${c.name}' berhasil! (+Rp ${c.reward.toLocaleString('id-ID')})`, 'success');
+
+        if (gameState.heat >= 100) {
+            triggerPlayerJail();
+        }
+    } else {
+        // Gagal
+        gameState.heat = Math.min(100, gameState.heat + (c.heat * 2));
+        if (Math.random() < 0.5 && gameState.members.length > 0) {
+            const jailedMem = gameState.members.pop();
+            gameState.jailedMembers.push({ ...jailedMem, timerSec: 60 });
+            setAssistantMessage(`Aksi '${c.name}' digerebek! 1 anak buah kita ditangkap polisi!`);
+            logMessage(`Gagal! 1 Anak buah ditangkap polisi!`, 'danger');
+        } else {
+            const loss = Math.floor(gameState.money * 0.15);
+            gameState.money -= loss;
+            setAssistantMessage(`Aksi '${c.name}' gagal! Kita rugi Rp ${loss.toLocaleString('id-ID')} untuk melarikan diri.`);
+            logMessage(`Gagal! Rugi Rp ${loss.toLocaleString('id-ID')}`, 'danger');
+        }
+    }
     updateUI();
 };
 
+// BISNIS HARAM (Revisi #8)
 function renderBusiness() {
     const container = document.getElementById('business-list');
     if (!container) return;
     container.innerHTML = '';
+
     BUSINESS_DATA.forEach(b => {
         const count = gameState.businesses[b.id] || 0;
         const card = document.createElement('div');
@@ -339,7 +458,7 @@ function renderBusiness() {
         card.innerHTML = `
             <div>
                 <h4>${b.name} (${count})</h4>
-                <p>Pasif: +Rp ${b.income.toLocaleString('id-ID')}/dtk | Biaya: Rp ${b.cost.toLocaleString('id-ID')}</p>
+                <p>Pasif: +Rp ${b.income.toLocaleString('id-ID')} / 10dtk | Biaya: Rp ${b.cost.toLocaleString('id-ID')}</p>
             </div>
             <button class="btn btn-green" onclick="buyBusiness('${b.id}')">Beli Bisnis</button>
         `;
@@ -352,116 +471,328 @@ window.buyBusiness = function(bId) {
     if (gameState.money >= b.cost) {
         gameState.money -= b.cost;
         gameState.businesses[bId] = (gameState.businesses[bId] || 0) + 1;
-        logMessage(`Membeli 1 unit '${b.name}'.`, 'success');
+        logMessage(`Membeli bisnis '${b.name}'.`, 'success');
         renderBusiness();
         updateUI();
-    } else {
-        alert("Uang kas tidak mencukupi!");
-    }
+    } else alert("Uang kas tidak cukup!");
 };
 
-// RIVALS & RECRUITMENT
-function renderRivals() {
-    const container = document.getElementById('rivals-list');
-    if (!container) return;
-    container.innerHTML = '';
-    RIVALS_DATA.forEach(r => {
-        const card = document.createElement('div');
-        card.className = 'game-card';
-        card.innerHTML = `
-            <div>
-                <h4>${r.name}</h4>
-                <p>Kekuatan Musuh: ${r.power} PWR</p>
-            </div>
-            <button class="btn btn-red" onclick="attackRival('${r.id}')">Serang Markas Musuh</button>
-        `;
-        container.appendChild(card);
-    });
-}
-
+// REKRUT & PECAT PASUKAN (Revisi #12)
 window.buyMember = function() {
     const cost = 500000;
     if (gameState.money >= cost) {
         gameState.money -= cost;
-        gameState.members++;
-        logMessage("Merekrut 1 Anak Buah baru.", 'success');
+        const pwr = Math.floor(Math.random() * 5) + 1; // Power random 1-5 (Revisi #12)
+        gameState.members.push({ id: Date.now(), power: pwr });
+        setAssistantMessage(`1 Anak buah baru direkrut dengan Power Tempur ${pwr} PWR.`);
+        logMessage(`Merekrut anak buah baru (+${pwr} PWR).`, 'success');
         updateUI();
     } else alert("Uang kas tidak cukup!");
 };
 
 window.buyWeapon = function() {
-    const cost = 1500000;
+    const cost = 2000000;
     if (gameState.money >= cost) {
         gameState.money -= cost;
         gameState.weapons++;
-        logMessage("Membeli 1 Senjata baru.", 'success');
+        logMessage("Membeli 1 Senjata Baru (+20 PWR).", 'success');
         updateUI();
     } else alert("Uang kas tidak cukup!");
 };
 
-window.attackRival = function(rivalId) {
-    const rival = RIVALS_DATA.find(r => r.id === rivalId);
-    const myPwr = getPlayerPower();
+function renderMembersList() {
+    const grid = document.getElementById('members-list-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
 
-    if (myPwr > rival.power) {
-        const loot = rival.power * 100000;
-        gameState.money += loot;
-        gameState.reputation += 50;
-        logMessage(`SERANGAN BERHASIL! Menghancurkan ${rival.name} dan merampas Rp ${loot.toLocaleString('id-ID')}!`, 'success');
-    } else {
-        gameState.members = Math.max(1, gameState.members - 3);
-        logMessage(`SERANGAN GAGAL! Pasukan Anda terpukul mundur oleh ${rival.name}. 3 Pasukan gugur.`, 'danger');
+    if (gameState.members.length === 0) {
+        grid.innerHTML = '<p class="text-muted">Tidak ada anak buah aktif.</p>';
+        return;
     }
+
+    gameState.members.forEach((m, idx) => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+            <div>
+                <h4>Anak Buah #${idx + 1}</h4>
+                <p>Kekuatan: <strong>${m.power} PWR</strong> | Upah: Rp 20.000 / 10dtk</p>
+            </div>
+            <button class="btn btn-red btn-xs" onclick="fireMember(${m.id})">Pecat Anak Buah</button>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+window.fireMember = function(memberId) {
+    gameState.members = gameState.members.filter(m => m.id !== memberId);
+    logMessage("Anak buah dipecat untuk mengurangi beban biaya.", "danger");
     updateUI();
 };
 
-// LOAN & BRIBE
-window.takeLoan = function(amount) {
-    gameState.loan += amount;
-    gameState.money += amount;
-    logMessage(`Mengambil pinjaman Rp ${amount.toLocaleString('id-ID')} dari Rentenir.`, 'danger');
+// PENJARA & TAHANAN (Revisi #10)
+function triggerPlayerJail() {
+    gameState.isJailed = true;
+    gameState.jailTimerSec = Math.floor(Math.random() * 40) + 20; // 20 - 60 detik lock
+    document.getElementById('jail-modal').classList.remove('hidden');
+    setAssistantMessage("DARURAT BOSS! Anda ditangkap Polda! Pilih opsi penyelamatan segera!");
+}
+
+function jailTicker() {
+    if (gameState.isJailed) {
+        gameState.jailTimerSec--;
+        document.getElementById('jail-timer-count').innerText = gameState.jailTimerSec;
+        if (gameState.jailTimerSec <= 0) {
+            gameState.isJailed = false;
+            gameState.heat = 20;
+            document.getElementById('jail-modal').classList.add('hidden');
+            setAssistantMessage("Anda telah selesai menjalani masa tahanan dan dibebaskan.");
+            logMessage("Bebas dari penjara setelah masa tahanan habis.", "success");
+            updateUI();
+        }
+    }
+
+    // Ticker Tahanan Anak Buah
+    if (gameState.jailedMembers && gameState.jailedMembers.length > 0) {
+        gameState.jailedMembers.forEach(m => m.timerSec--);
+        const freed = gameState.jailedMembers.filter(m => m.timerSec <= 0);
+        if (freed.length > 0) {
+            freed.forEach(m => gameState.members.push({ id: m.id, power: m.power }));
+            gameState.jailedMembers = gameState.jailedMembers.filter(m => m.timerSec > 0);
+            logMessage(`${freed.length} Anak buah dibebaskan dari penjara!`, 'success');
+            updateUI();
+        }
+    }
+}
+
+window.jailBribe100 = function() {
+    const cost = 15000000;
+    if (gameState.money >= cost) {
+        gameState.money -= cost;
+        gameState.isJailed = false;
+        gameState.heat = 0;
+        document.getElementById('jail-modal').classList.add('hidden');
+        logMessage("Menyuap petinggi kepolisian! Bebas instan 100%.", 'success');
+        updateUI();
+    } else alert("Uang kas tidak cukup untuk suap 100%!");
+};
+
+window.jailLawyer = function() {
+    const cost = 4000000;
+    if (gameState.money >= cost) {
+        gameState.money -= cost;
+        if (Math.random() < 0.45) {
+            gameState.isJailed = false;
+            gameState.heat = 20;
+            document.getElementById('jail-modal').classList.add('hidden');
+            logMessage("Pengacara berhasil memenangkan gugatan! Bebas dari penjara.", 'success');
+        } else {
+            gameState.jailTimerSec = Math.max(5, gameState.jailTimerSec - 15);
+            alert("Pengacara gagal membebaskan penuh, tapi berhasil memotong hukuman 15 detik!");
+        }
+        updateUI();
+    } else alert("Uang kas tidak cukup!");
+};
+
+window.jailBreakout = function() {
+    const cost = 1000000;
+    if (gameState.money >= cost) {
+        gameState.money -= cost;
+        if (Math.random() < 0.3) {
+            gameState.isJailed = false;
+            gameState.heat = 50;
+            document.getElementById('jail-modal').classList.add('hidden');
+            logMessage("Operasi pembebasan anak buah BERHASIL!", 'success');
+        } else {
+            alert("Operasi jebol penjara gagal! Waktu tahanan bertambah 15 detik!");
+            gameState.jailTimerSec += 15;
+            if (gameState.members.length > 0) gameState.members.pop();
+        }
+        updateUI();
+    } else alert("Uang tidak cukup!");
+};
+
+function renderJailedMembersList() {
+    const container = document.getElementById('jailed-members-list');
+    const countEl = document.getElementById('jailed-members-count');
+    if (!container) return;
+
+    countEl.innerText = gameState.jailedMembers.length;
+    container.innerHTML = '';
+
+    gameState.jailedMembers.forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'jailed-item';
+        item.innerHTML = `
+            <span>Anak Buah (PWR ${m.power}) - Sisa: ${m.timerSec}s</span>
+            <button class="btn btn-gold btn-xs" onclick="bribeFreeJailedMember(${m.id})">Suap Bebas (Rp 2 Juta)</button>
+        `;
+        container.appendChild(item);
+    });
+}
+
+window.bribeFreeJailedMember = function(mId) {
+    const cost = 2000000;
+    if (gameState.money >= cost) {
+        gameState.money -= cost;
+        const m = gameState.jailedMembers.find(x => x.id === mId);
+        if (m) {
+            gameState.members.push({ id: m.id, power: m.power });
+            gameState.jailedMembers = gameState.jailedMembers.filter(x => x.id !== mId);
+            logMessage("Menyuap untuk mengeluarkan anak buah dari sel.", 'success');
+            updateUI();
+        }
+    } else alert("Uang kas tidak cukup!");
+};
+
+// EKSPEDISI PENYELUNDUPAN (Revisi #14)
+function renderExpeditions() {
+    const container = document.getElementById('expeditions-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    EXPEDITION_TYPES.forEach(e => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+            <div>
+                <h4>${e.name}</h4>
+                <p>Durasi: ${e.durationSec}s | Potensi Hasil: Rp ${e.reward.toLocaleString('id-ID')}</p>
+                <p>Risiko Pembajakan/Polairud: ${e.risk * 100}%</p>
+            </div>
+            <button class="btn btn-gold" onclick="startExpedition('${e.id}')">Kirim Armada</button>
+        `;
+        container.appendChild(card);
+    });
+}
+
+window.startExpedition = function(eId) {
+    const expType = EXPEDITION_TYPES.find(x => x.id === eId);
+    if (!expType) return;
+
+    if (gameState.members.length < 3) {
+        alert("Butuh minimal 3 anak buah untuk mengawal ekspedisi!");
+        return;
+    }
+
+    const endTime = Date.now() + (expType.durationSec * 1000);
+    gameState.activeExpeditions.push({ id: Date.now(), typeId: eId, endTime });
+    logMessage(`Memulai '${expType.name}'. Armada sedang dalam perjalanan...`, 'success');
     updateUI();
 };
 
-window.payLoan = function() {
-    if (gameState.money >= gameState.loan) {
-        gameState.money -= gameState.loan;
-        gameState.loan = 0;
-        logMessage("Hutang rentenir berhasil dilunasi!", 'success');
-    } else {
-        alert("Uang kas tidak cukup untuk melunasi hutang!");
+function expeditionTicker() {
+    if (!gameState.activeExpeditions || gameState.activeExpeditions.length === 0) return;
+
+    const now = Date.now();
+    const finished = gameState.activeExpeditions.filter(e => now >= e.endTime);
+
+    if (finished.length > 0) {
+        finished.forEach(exp => {
+            const expType = EXPEDITION_TYPES.find(x => x.id === exp.typeId);
+            if (expType) {
+                if (Math.random() > expType.risk) {
+                    gameState.money += expType.reward;
+                    setAssistantMessage(`KABAR SUKSES! Armada '${expType.name}' tiba dan menghasilkan Rp ${expType.reward.toLocaleString('id-ID')}!`);
+                    logMessage(`Ekspedisi '${expType.name}' sukses! (+Rp ${expType.reward.toLocaleString('id-ID')})`, 'success');
+                } else {
+                    setAssistantMessage(`Gagal! Armada '${expType.name}' dihadang Polairud/Begal Laut! Barang sita total.`);
+                    logMessage(`Ekspedisi '${expType.name}' dibajak/ditangkap!`, 'danger');
+                }
+            }
+        });
+
+        gameState.activeExpeditions = gameState.activeExpeditions.filter(e => now < e.endTime);
+        updateUI();
     }
-    updateUI();
+
+    renderActiveExpeditions();
+}
+
+function renderActiveExpeditions() {
+    const container = document.getElementById('active-expeditions-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (gameState.activeExpeditions.length === 0) {
+        container.innerHTML = '<p class="text-muted">Tidak ada ekspedisi berjalan.</p>';
+        return;
+    }
+
+    const now = Date.now();
+    gameState.activeExpeditions.forEach(exp => {
+        const expType = EXPEDITION_TYPES.find(x => x.id === exp.typeId);
+        const sisaSec = Math.max(0, Math.ceil((exp.endTime - now) / 1000));
+
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+            <div>
+                <h4>${expType.name}</h4>
+                <p>Sisa Waktu Perjalanan: <strong class="text-yellow">${sisaSec} detik</strong></p>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// DONASI ORMAS & SUAP POLISI (Revisi #15)
+window.donateOrmas = function() {
+    const cost = 3000000;
+    if (gameState.money >= cost) {
+        gameState.money -= cost;
+        gameState.heat = Math.max(0, gameState.heat - 15);
+        setAssistantMessage("Donasi bakti sosial disalurkan! Opini publik membaik, Heat Level berkurang -15%.");
+        logMessage("Mengadakan Donasi Ormas/Sosial. Heat -15%.", 'success');
+        updateUI();
+    } else alert("Uang kas tidak cukup!");
 };
 
 window.bribePolice = function() {
-    const cost = 5000000;
+    const cost = 8000000;
     if (gameState.money >= cost) {
         gameState.money -= cost;
-        gameState.heat = Math.max(0, gameState.heat - 20);
-        logMessage("Menyuap oknum aparat. Heat Level berkurang -20%.", 'success');
+        gameState.heat = Math.max(0, gameState.heat - 25);
+        setAssistantMessage("Suap oknum berhasil! Laporan kejahatan dimusnahkan. Heat Level berkurang -25%.");
+        logMessage("Menyuap Oknum Polisi. Heat -25%.", 'success');
         updateUI();
-    } else alert("Uang tidak cukup untuk bayar suap!");
+    } else alert("Uang kas tidak cukup!");
 };
 
-// RANDOM EVENTS
+// RANDOM EVENTS (1-5 MENIT) (Revisi #1 & #11)
+function scheduleNextRandomEvent() {
+    const randomMs = (Math.floor(Math.random() * 240) + 60) * 1000; // 1-5 menit
+    setTimeout(() => {
+        triggerRandomEvent();
+        scheduleNextRandomEvent();
+    }, randomMs);
+}
+
 function triggerRandomEvent() {
-    if (!currentUser) return;
+    if (!currentUser || !gameState.setupDone || gameState.isJailed) return;
+
     const events = [
         {
-            title: "PENGGEREBEKAN APARAT!",
-            desc: "Polisi mendatangi salah satu markas bisnis Anda!",
+            title: "SERANGAN GENG MAFIA RIVAL!",
+            desc: "Geng musuh menyerang salah satu bisnis haram Anda!",
             choices: [
-                { text: "Bayar Uang Damai (Rp 2.000.000)", action: () => { gameState.money = Math.max(0, gameState.money - 2000000); } },
-                { text: "Kabur & Pasrah (Heat +15%)", action: () => { gameState.heat = Math.min(100, gameState.heat + 15); } }
+                { text: "Kirim Pasukan Perang (Butuh PWR)", action: () => {
+                    if (getPlayerTotalPower() >= 50) {
+                        logMessage("Berhasil memukul mundur geng rival!", 'success');
+                    } else {
+                        gameState.money = Math.max(0, gameState.money - 3000000);
+                        logMessage("Kekuatan kurang! Bisnis Anda dirusak, rugi Rp 3 Juta.", 'danger');
+                    }
+                }},
+                { text: "Bayar Uang Damai (Rp 2.000.000)", action: () => { gameState.money = Math.max(0, gameState.money - 2000000); } }
             ]
         },
         {
-            title: "TAWARAN PENCUCIAN UANG",
-            desc: "Seorang pengusaha menawarkan kerja sama pencucian uang instan.",
+            title: "SIDAK POLDA / POLRES",
+            desc: "Tim intel kepolisian melakukan patroli ketat di wilayah Anda.",
             choices: [
-                { text: "Terima (+Rp 10.000.000, Heat +10%)", action: () => { gameState.money += 10000000; gameState.heat += 10; } },
-                { text: "Tolak Tawaran", action: () => {} }
+                { text: "Tutup Bisnis Sementara (Heat -10%)", action: () => { gameState.heat = Math.max(0, gameState.heat - 10); } },
+                { text: "Abaikan Sidak (Heat +15%)", action: () => { gameState.heat = Math.min(100, gameState.heat + 15); } }
             ]
         }
     ];
@@ -492,7 +823,44 @@ function showEventModal(ev) {
     document.getElementById('event-modal').classList.remove('hidden');
 }
 
-// LOGGING
+// RESET PROGRESS
+window.resetGameProgress = async function() {
+    if (!confirm("Apakah Anda yakin ingin MERESET TOTAL progress dan mulai dari awal lagi?")) return;
+
+    gameState = {
+        setupDone: false,
+        homeProvince: 'dki',
+        homeCity: 'Jakarta Pusat',
+        money: 2000000,
+        weapons: 0,
+        reputation: 0,
+        heat: 0,
+        isJailed: false,
+        jailTimerSec: 0,
+        members: [
+            { id: Date.now() + 1, power: Math.floor(Math.random() * 5) + 1 },
+            { id: Date.now() + 2, power: Math.floor(Math.random() * 5) + 1 }
+        ],
+        jailedMembers: [],
+        businesses: {},
+        controlledCities: {},
+        activeExpeditions: []
+    };
+
+    await cloudAutosave();
+    document.getElementById('game-container').classList.add('hidden');
+    document.getElementById('setup-modal').classList.remove('hidden');
+    alert("Progress game berhasil di-reset!");
+};
+
+// HELPERS
+function getProvinceObj(pId) { return PROVINCES.find(p => p.id === pId); }
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
+    return hash;
+}
+
 function logMessage(msg, type = '') {
     const logs = document.getElementById('game-logs');
     if (!logs) return;
