@@ -55,12 +55,13 @@
         </div>
     </div>
 
-    <!-- Modal Event Acak -->
+    <!-- Modal Event Acak dengan Timer 20 Detik (Revisi #8) -->
     <div id="event-modal" class="modal-overlay hidden">
         <div class="modal-card event-card">
             <h3 class="gold-text" id="event-title">EVENT ACAK</h3>
             <p id="event-desc">Deskripsi event...</p>
-            <div id="event-choices" class="event-choices"></div>
+            <div class="event-timer-badge">Batas Waktu Pilih: <strong id="event-timer-count" class="text-yellow">20</strong> detik</div>
+            <div id="event-choices" class="event-choices" style="margin-top: 15px;"></div>
         </div>
     </div>
 
@@ -72,9 +73,9 @@
             <div class="jail-timer">Sisa Waktu Penjara: <strong id="jail-timer-count" class="text-yellow">0</strong> detik</div>
             
             <div class="jail-actions">
-                <button class="btn btn-gold full-btn" onclick="jailBribe100()">Suap 100% Bebas Instan (Sangat Mahal)</button>
-                <button class="btn btn-blue full-btn" onclick="jailLawyer()">Sewa Pengacara (Biaya Sedang, Peluang Kecil)</button>
-                <button class="btn btn-red full-btn" onclick="jailBreakout()">Operasi Anak Buah (Biaya Murah, Berisiko Ditangkap)</button>
+                <button class="btn btn-gold full-btn" onclick="jailBribe100()">Suap 100% Bebas Instan (Rp 50 Juta)</button>
+                <button class="btn btn-blue full-btn" onclick="jailLawyer()">Sewa Pengacara (Rp 15 Juta)</button>
+                <button class="btn btn-red full-btn" onclick="jailBreakout()">Operasi Anak Buah (Rp 5 Juta)</button>
             </div>
         </div>
     </div>
@@ -96,7 +97,7 @@
                 </div>
             </div>
 
-            <!-- Stats Bar (Timer Update 1 Menit) -->
+            <!-- Stats Bar -->
             <div class="stats-bar">
                 <div class="stat-box">
                     <span class="stat-label">KAS SINDIKAT</span>
@@ -136,11 +137,11 @@
 
         <!-- Dynamic Navigation Tabs -->
         <nav class="nav-tabs">
-            <button class="nav-btn active" onclick="switchTab('assistant-tab')">🎙️ Laporan Asisten</button>
-            <button class="nav-btn" onclick="switchTab('turf-tab')">🗺️ Peta Wilayah</button>
+            <button class="nav-btn active" onclick="switchTab('turf-tab')">🗺️ Peta Wilayah</button>
             <button class="nav-btn" onclick="switchTab('crimes-tab')">🔪 Aksi Kriminal</button>
             <button class="nav-btn" onclick="switchTab('business-tab')">🏢 Bisnis Haram</button>
             <button class="nav-btn" onclick="switchTab('rivals-tab')">⚔️ Pasukan & Pecat</button>
+            <button class="nav-btn" onclick="switchTab('officers-tab')">🎖️ Perwira Unik</button>
             <button class="nav-btn" onclick="switchTab('expedition-tab')">🚚 Ekspedisi Penyelundupan</button>
             <button class="nav-btn" onclick="switchTab('global-tab')">✈️ Ekspansi Luar Negeri</button>
             <button class="nav-btn" onclick="switchTab('social-tab')">🤝 Ormas & Suap</button>
@@ -148,28 +149,12 @@
 
         <!-- Main Workspace -->
         <main class="content-body">
-            
-            <!-- TAB 1: ASISTEN PRIBADI -->
-            <section id="assistant-tab" class="tab-content active">
-                <div class="assistant-card">
-                    <div class="assistant-avatar">💼</div>
-                    <div class="assistant-speech">
-                        <h4 id="assistant-name">Bambang - Asisten Keamanan</h4>
-                        <p id="assistant-message">"Laporan hari ini Boss! Operasi berjalan lancar. Perhatikan waktu pencairan kas setiap 1 menit sekali."</p>
-                    </div>
-                </div>
 
-                <div class="jail-subpanel">
-                    <h4>Anak Buah Ditahan Polisi (<span id="jailed-members-count">0</span> Orang)</h4>
-                    <div id="jailed-members-list" class="jailed-list"></div>
-                </div>
-            </section>
-
-            <!-- TAB 2: PETA WILAYAH -->
-            <section id="turf-tab" class="tab-content">
+            <!-- TAB 1: PETA WILAYAH & TURF REBELLION (Revisi #6) -->
+            <section id="turf-tab" class="tab-content active">
                 <div class="turf-header">
                     <h3>PETA DOMINASI PROVINSI & KOTA INDONESIA</h3>
-                    <p>Kuasai seluruh kota di provinsi asal sebelum mengekspansi provinsi berikutnya!</p>
+                    <p>Kuasai seluruh kota di provinsi asal & pertahankan dari potensi pemberontakan lokal!</p>
 
                     <div class="province-selector-bar">
                         <label>Pilih Provinsi View: </label>
@@ -182,21 +167,29 @@
                 </div>
             </section>
 
-            <!-- TAB 3: AKSI KRIMINAL -->
+            <!-- TAB 2: AKSI KRIMINAL DENGAN COUNTDOWN & LOCKING (Revisi #3) -->
             <section id="crimes-tab" class="tab-content">
-                <h3>AKSI KRIMINAL MANUAL (DENGAN WAKTU PROSES)</h3>
-                <p>Setiap aksi membutuhkan waktu eksekusi nyata sebelum hasilnya diketahui!</p>
+                <h3>AKSI KRIMINAL MANUAL</h3>
+                <p>Hanya 1 aksi yang bisa berjalan dalam satu waktu. Tombol aksi lain dikunci selama proses!</p>
+
+                <!-- Box Status Countdown Aksi Aktif -->
+                <div id="active-crime-status-box" class="jail-subpanel hidden" style="border-color: var(--gold); margin-bottom: 20px;">
+                    <h4 class="gold-text">AKSI KRIMINAL SEDANG BERJALAN</h4>
+                    <p id="active-crime-name-label">Jenis Aksi: -</p>
+                    <p>Sisa Waktu Proses: <strong id="active-crime-timer" class="text-yellow">0</strong> detik</p>
+                </div>
+
                 <div class="card-grid" id="crimes-list"></div>
             </section>
 
-            <!-- TAB 4: BISNIS HARAM -->
+            <!-- TAB 3: BISNIS HARAM -->
             <section id="business-tab" class="tab-content">
                 <h3>BISNIS HARAM & PASIF</h3>
-                <p>Investasikan modal kas untuk pendapatan pasif yang cair setiap 1 menit sekali!</p>
+                <p>Investasikan modal kas untuk mendapatkan pasif income per 1 menit sekali!</p>
                 <div class="card-grid" id="business-list"></div>
             </section>
 
-            <!-- TAB 5: REKRUT & PECAT PASUKAN -->
+            <!-- TAB 4: REKRUT & PECAT PASUKAN -->
             <section id="rivals-tab" class="tab-content">
                 <h3>MANAJEMEN PASUKAN & SENJATA</h3>
                 <div class="recruitment-banner">
@@ -207,14 +200,21 @@
                     </div>
                 </div>
 
-                <h4 style="margin-top:20px;">Daftar Anak Buah Aktif (Pecat untuk Mengurangi Beban Gaji)</h4>
+                <h4 style="margin-top:20px;">Daftar Anak Buah Aktif</h4>
                 <div id="members-list-grid" class="card-grid"></div>
             </section>
 
-            <!-- TAB 6: EKSPEDISI PENYELUNDUPAN -->
+            <!-- TAB 5: PERWIRA UNIK / UNDERBOSS (Revisi #5) -->
+            <section id="officers-tab" class="tab-content">
+                <h3>PERWIRA UNIK & TOKOH KEPERCAYaan</h3>
+                <p>Rekrut perwira dengan keahlian pasif khusus untuk memperkuat dinasti kriminal Anda!</p>
+                <div class="card-grid" id="officers-list"></div>
+            </section>
+
+            <!-- TAB 6: EKSPEDISI PENYELUNDUPAN ROTASI (Revisi #7) -->
             <section id="expedition-tab" class="tab-content">
-                <h3>EKSPEDISI PENYELUNDUPAN LINTAS KOTA / PROVINSI</h3>
-                <p>Hanya 1 ekspedisi yang bisa berjalan dalam satu waktu! Risiko gagal meliputi ganti rugi barang atau anggota mati/ditangkap.</p>
+                <h3>EKSPEDISI PENYELUNDUPAN DENGAN ROTASI MISI</h3>
+                <p>Misi penyelundupan muncul acak (1-3 misi) dengan batas waktu pendaftaran! Ambil sebelum kadaluarsa.</p>
                 <div class="card-grid" id="expeditions-list"></div>
 
                 <h4 style="margin-top:25px;">Misi Penyelundupan Berjalan</h4>
@@ -223,8 +223,8 @@
 
             <!-- TAB 7: EKSPANSI LUAR NEGERI -->
             <section id="global-tab" class="tab-content">
-                <h3>EKSPANSI KARTER INTERNASIONAL (SEASON END-GAME)</h3>
-                <p id="global-status-desc">Kuasai seluruh 6 Provinsi di Indonesia terlebih dahulu untuk membuka akses ke kartel internasional!</p>
+                <h3>EKSPANSI KARTEL INTERNASIONAL</h3>
+                <p id="global-status-desc">Kuasai seluruh 6 Provinsi di Indonesia terlebih dahulu!</p>
                 <div class="card-grid" id="global-targets-list"></div>
             </section>
 
@@ -248,7 +248,19 @@
 
         </main>
 
-        <!-- Footer Log Terminal -->
+        <!-- STICKY ASISTEN KEAMANAN & LOG FOOTER (Revisi #2) -->
+        <div class="assistant-card-sticky">
+            <div class="assistant-avatar">💼</div>
+            <div class="assistant-speech">
+                <h4 id="assistant-name">Bambang - Asisten Keamanan</h4>
+                <p id="assistant-message">"Laporan hari ini Boss! Operasi berjalan lancar. Pantau menu untuk ekspansi baru."</p>
+            </div>
+            <div style="margin-left:auto; text-align:right;">
+                <small class="text-muted">Anak Buah Ditahan:</small>
+                <strong id="jailed-members-count" class="text-red">0 Orang</strong>
+            </div>
+        </div>
+
         <footer class="log-footer">
             <div class="log-title">CATATAN OPERASIONAL SINDIKAT</div>
             <div id="game-logs" class="logs-body"></div>
