@@ -35,7 +35,7 @@
         </div>
     </div>
 
-    <!-- Modal Pilihan Wilayah Awal (Revisi #3) -->
+    <!-- Modal Pilihan Wilayah Awal -->
     <div id="setup-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <h2 class="gold-text">PILIH BASECAMP MAFIA</h2>
@@ -55,7 +55,7 @@
         </div>
     </div>
 
-    <!-- Modal Event Acak (Revisi #1 & #11) -->
+    <!-- Modal Event Acak -->
     <div id="event-modal" class="modal-overlay hidden">
         <div class="modal-card event-card">
             <h3 class="gold-text" id="event-title">EVENT ACAK</h3>
@@ -64,7 +64,7 @@
         </div>
     </div>
 
-    <!-- Modal Penjara Pemain (Revisi #10) -->
+    <!-- Modal Penjara Pemain -->
     <div id="jail-modal" class="modal-overlay hidden">
         <div class="modal-card event-card border-red">
             <h2 class="text-red">Anda Ditangkap Polisi!</h2>
@@ -96,22 +96,26 @@
                 </div>
             </div>
 
-            <!-- Stats Engine Bar (Revisi #9) -->
+            <!-- Stats Engine Bar dengan Timer Update 15s (Revisi #1) -->
             <div class="stats-bar">
                 <div class="stat-box">
                     <span class="stat-label">KAS SINDIKAT</span>
                     <span id="stat-money" class="stat-value text-green">Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">PEMASUKAN ( / 10dtk )</span>
+                    <span class="stat-label">TIMER CAIR KAS</span>
+                    <span id="stat-timer-15s" class="stat-value text-yellow">15 detik</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">PEMASUKAN ( / 15dtk )</span>
                     <span id="stat-income" class="stat-value text-green">+Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">UPAH ANAK BUAH ( / 10dtk )</span>
+                    <span class="stat-label">UPAH ANAK ( / 15dtk )</span>
                     <span id="stat-expenses" class="stat-value text-red">-Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-label">NET KAS ( / 10dtk )</span>
+                    <span class="stat-label">NET KAS ( / 15dtk )</span>
                     <span id="stat-net" class="stat-value text-blue">Rp 0</span>
                 </div>
                 <div class="stat-box">
@@ -144,7 +148,7 @@
         <!-- Main Workspace -->
         <main class="content-body">
             
-            <!-- TAB 1: ASISTEN PRIBADI (Revisi #13) -->
+            <!-- TAB 1: ASISTEN PRIBADI -->
             <section id="assistant-tab" class="tab-content active">
                 <div class="assistant-card">
                     <div class="assistant-avatar">💼</div>
@@ -154,14 +158,14 @@
                     </div>
                 </div>
 
-                <!-- Tahanan Anak Buah (Revisi #10) -->
+                <!-- Tahanan Anak Buah -->
                 <div class="jail-subpanel">
                     <h4>Anak Buah Ditahan Polisi (<span id="jailed-members-count">0</span> Orang)</h4>
                     <div id="jailed-members-list" class="jailed-list"></div>
                 </div>
             </section>
 
-            <!-- TAB 2: PETA WILAYAH (Revisi #3, #4, #5, #7) -->
+            <!-- TAB 2: PETA WILAYAH -->
             <section id="turf-tab" class="tab-content">
                 <div class="turf-header">
                     <h3>PETA DOMINASI PROVINSI & KOTA</h3>
@@ -178,21 +182,21 @@
                 </div>
             </section>
 
-            <!-- TAB 3: AKSI KRIMINAL (Revisi #6) -->
+            <!-- TAB 3: AKSI KRIMINAL -->
             <section id="crimes-tab" class="tab-content">
                 <h3>AKSI KRIMINAL MANUVAL</h3>
                 <p>Eksekusi aksi kejahatan di Indonesia berdasarkan jumlah anak buah & Power Tempur!</p>
                 <div class="card-grid" id="crimes-list"></div>
             </section>
 
-            <!-- TAB 4: BISNIS HARAM (Revisi #8) -->
+            <!-- TAB 4: BISNIS HARAM -->
             <section id="business-tab" class="tab-content">
                 <h3>BISNIS HARAM & PASIF</h3>
-                <p>Investasikan kas untuk mendapatkan passive income setiap 10 detik sekali!</p>
+                <p>Investasikan kas untuk mendapatkan passive income setiap 15 detik sekali!</p>
                 <div class="card-grid" id="business-list"></div>
             </section>
 
-            <!-- TAB 5: REKRUT & PECAT PASUKAN (Revisi #12) -->
+            <!-- TAB 5: REKRUT & PECAT PASUKAN -->
             <section id="rivals-tab" class="tab-content">
                 <h3>MANAJEMEN PASUKAN & PECAT</h3>
                 <div class="recruitment-banner">
@@ -207,7 +211,7 @@
                 <div id="members-list-grid" class="card-grid"></div>
             </section>
 
-            <!-- TAB 6: EKSPEDISI PENYELUNDUPAN (Revisi #14) -->
+            <!-- TAB 6: EKSPEDISI PENYELUNDUPAN -->
             <section id="expedition-tab" class="tab-content">
                 <h3>EKSPEDISI PENYELUNDUPAN LINTAS KOTA / PROVINSI</h3>
                 <p>Kirim penyelundupan barang haram lintas pulau dengan risiko penangkapan Polairud atau pembajakan geng!</p>
@@ -217,7 +221,7 @@
                 <div id="active-expeditions-list" class="card-grid"></div>
             </section>
 
-            <!-- TAB 7: ORMAS & SUAP HEAT LEVEL (Revisi #15) -->
+            <!-- TAB 7: ORMAS & SUAP HEAT LEVEL -->
             <section id="social-tab" class="tab-content">
                 <h3>PENURUNAN HEAT LEVEL & DONASI ORMAS</h3>
                 <div class="loan-container">
