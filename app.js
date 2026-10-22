@@ -3,8 +3,10 @@ import {
     db, 
     fetchGlobalOccupiedCities, 
     claimBasecampGlobal, 
+    updateCityOccupantGlobal,
     loadUserDataFromCloud, 
     saveUserDataToCloud, 
+    fetchLeaderboardData,
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
     signOut, 
@@ -25,6 +27,7 @@ import {
 function createDefaultGameState() {
     return {
         setupDone: false,
+        username: '',
         homeProvince: 'dki',
         homeCity: 'Jakarta Pusat',
         money: 5000000,
@@ -67,7 +70,7 @@ window.addEventListener('DOMContentLoaded', () => {
     setInterval(secondTicker, 1000);
     setInterval(cloudAutosaveInterval, 15000);
     rotateExpeditionMissions();
-    setInterval(rotateExpeditionMissions, 30000); // Rotasi tawaran ekspedisi tiap 30s
+    setInterval(rotateExpeditionMissions, 30000);
     scheduleNextRandomEvent();
 });
 
@@ -82,6 +85,8 @@ function setupAuthListeners() {
             document.getElementById('auth-modal').classList.add('hidden');
             const cloudData = await loadUserDataFromCloud(user.uid);
             if (cloudData) gameState = { ...createDefaultGameState(), ...cloudData };
+
+            gameState.username = user.email.split('@')[0];
 
             if (!gameState.setupDone) {
                 document.getElementById('setup-modal').classList.remove('hidden');
@@ -188,7 +193,7 @@ window.onProvinceSelectChange = function() {
 window.submitInitialSetup = async function() {
     const pId = document.getElementById('setup-province-select').value;
     const cName = document.getElementById('setup-city-select').value;
-    const username = currentUser.email.split('@')[0];
+    const username = gameState.username;
 
     const result = await claimBasecampGlobal(cName, currentUser.uid, username);
     if (!result.success) {
@@ -220,7 +225,6 @@ async function cloudAutosaveInterval() {
 function secondTicker() {
     if (!currentUser || !gameState.setupDone) return;
 
-    // Revisi #5: Modul Overlay Tutup Bisnis Kunci Layar
     const lockOverlay = document.getElementById('lockdown-overlay');
     if (gameState.isBusinessClosedTimer > 0) {
         gameState.isBusinessClosedTimer--;
@@ -269,8 +273,7 @@ function calculateTotalIncome1Min() {
     });
     const controlledCount = Object.keys(gameState.controlledCities).length;
     income += controlledCount * 1000000;
-    
-    // Hasil dividen Kartel Internasional (Revisi #4)
+
     GLOBAL_TARGETS.forEach(g => {
         if (gameState.controlledGlobal[g.id]) income += g.rewardPerMin;
     });
@@ -303,13 +306,14 @@ function initUI() {
     renderOfficers();
     renderExpeditions();
     renderGlobalTargets();
+    renderLeaderboard();
     updateUI();
 }
 
 function updateUI() {
     if (!gameState.setupDone) return;
 
-    document.getElementById('user-display-name').innerText = currentUser ? currentUser.email.split('@')[0] : 'Boss';
+    document.getElementById('user-display-name').innerText = gameState.username;
     document.getElementById('player-location-badge').innerText = `Basecamp: ${gameState.homeCity}`;
 
     const totalCities = Object.keys(gameState.controlledCities).length;
@@ -349,9 +353,38 @@ window.switchTab = function(tabId) {
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     if (event && event.target) event.target.classList.add('active');
+
+    if (tabId === 'leaderboard-tab') renderLeaderboard();
 };
 
-// PETA WILAYAH & MMO PVP
+// RENDERING LEADERBOARD (Revisi #1)
+async function renderLeaderboard() {
+    const tbody = document.getElementById('leaderboard-body');
+    if (!tbody) return;
+
+    const players = await fetchLeaderboardData();
+    if (players.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada data pemain lain.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    players.forEach((p, idx) => {
+        const tr = document.createElement('tr');
+        if (p.uid === currentUser.uid) tr.style.background = 'rgba(223, 168, 55, 0.15)';
+
+        tr.innerHTML = `
+            <td>#${idx + 1}</td>
+            <td><strong>${p.username}</strong> ${p.uid === currentUser.uid ? '<span class="text-yellow">(Anda)</span>' : ''}</td>
+            <td class="text-red"><strong>${p.power} PWR</strong></td>
+            <td class="text-blue">${p.cities} Kota</td>
+            <td class="text-green">Rp ${p.money.toLocaleString('id-ID')}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// PETA WILAYAH & SERANGAN REAL-TIME PVP (Revisi #2)
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -393,7 +426,7 @@ function renderTurfMap() {
             <h4>${cityName}</h4>
             <p style="font-size:0.85rem;">Status: <strong>${statusText}</strong></p>
             ${isControlled ? '<span class="text-green">✔ Wilayah Aman</span>' :
-              occupant && occupant.uid !== currentUser.uid ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="attackPlayerCity('${cityName}')">Serang Pemain Lain</button>` :
+              occupant && occupant.uid !== currentUser.uid ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="attackPlayerCity('${cityName}')">Serang & Penjarakan Pemain</button>` :
               `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="reclaimCity('${cityName}')">Serang & Rebut</button>`}
         `;
         grid.appendChild(card);
@@ -418,22 +451,62 @@ window.reclaimCity = function(cityName) {
     updateUI();
 };
 
+// SERANGAN SANGAT BERDAMPAK KE DUA PEMAIN (Revisi #2)
 window.attackPlayerCity = async function(cityName) {
     const occupant = globalOccupiedMap[cityName];
     if (!occupant) return;
 
     const myPwr = getPlayerTotalPower();
-    const targetPwr = 200; 
+    
+    // Ambil data real-time pemain target dari Cloud Firestore
+    const targetCloudData = await loadUserDataFromCloud(occupant.uid);
+    let targetPwr = 200; // Default jika target belum ter-update
+    if (targetCloudData) {
+        targetPwr = (targetCloudData.weapons || 0) * 25;
+        (targetCloudData.members || []).forEach(m => targetPwr += m.power);
+    }
 
-    if (myPwr >= targetPwr) {
+    // Cek Peace Shield target
+    if (targetCloudData && targetCloudData.peaceShieldUntil && Date.now() < targetCloudData.peaceShieldUntil) {
+        alert(`Kota ${cityName} sedang dilindungi Peace Shield (Perlindungan Korban)! Tidak bisa diserang.`);
+        return;
+    }
+
+    if (myPwr > targetPwr) {
+        // 1. DAMPAK BAGI PENYERANG (Pemain A)
         gameState.controlledCities[cityName] = true;
-        setAssistantMessage(`Perang Berhasil! Anda merebut kota ${cityName} dari tangan ${occupant.username}!`);
-        logMessage(`Berhasil merebut kota ${cityName} dari ${occupant.username}!`, 'success');
+        
+        // Menjarah kas lawan (10% dari kas target, maks Rp 50 Juta)
+        let lootedCash = 15000000;
+        if (targetCloudData && targetCloudData.money) {
+            lootedCash = Math.min(50000000, Math.floor(targetCloudData.money * 0.10));
+        }
+        gameState.money += lootedCash;
+
+        // Update klaim kepemilikan kota di Database Global Firestore
+        await updateCityOccupantGlobal(cityName, currentUser.uid, gameState.username);
+
+        // 2. DAMPAK BAGI KORBAN (Pemain B)
+        if (targetCloudData) {
+            delete targetCloudData.controlledCities[cityName]; // Kota lepas dari Pemain B
+            targetCloudData.money = Math.max(0, targetCloudData.money - lootedCash); // Kas Pemain B terpotong
+            targetCloudData.peaceShieldUntil = Date.now() + (12 * 60 * 60 * 1000); // Beri Peace Shield 12 jam
+            
+            // Simpan perubahan langsung ke Firestore Pemain B
+            await saveUserDataToCloud(occupant.uid, targetCloudData);
+        }
+
+        setAssistantMessage(`PERANG MENANG! Anda merebut ${cityName} dari ${occupant.username} & menjarah kas Rp ${lootedCash.toLocaleString('id-ID')}!`);
+        logMessage(`KEMENANGAN PVP: Merebut ${cityName} dari ${occupant.username} (+Rp ${lootedCash.toLocaleString('id-ID')})`, 'success');
+        
+        await cloudAutosaveInterval();
+        populateProvinceViewSelect();
         updateUI();
     } else {
         removeRandomMembers(1, 3);
-        setAssistantMessage(`Serangan ke wilayah ${occupant.username} gagal! Pertahanan mereka terlalu kuat.`);
-        logMessage(`Gagal menyerang wilayah ${occupant.username}.`, 'danger');
+        setAssistantMessage(`Serangan ke wilayah ${occupant.username} GAGAL! Pasukan kita dipukul mundur.`);
+        logMessage(`PVP GAGAL: Serangan ke ${occupant.username} dipukul mundur. Pasukan gugur.`, 'danger');
+        updateUI();
     }
 };
 
@@ -666,7 +739,7 @@ window.hireOfficer = function(oId) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// PENJARA & REVISI BUG TAHANAN (Revisi #1)
+// PENJARA
 function triggerPlayerJail() {
     gameState.isJailed = true;
     gameState.jailTimerSec = Math.floor(Math.random() * 40) + 20;
@@ -688,7 +761,6 @@ function jailTicker() {
         }
     }
 
-    // Ticker untuk anak buah di sel tahanan
     if (gameState.jailedMembers && gameState.jailedMembers.length > 0) {
         gameState.jailedMembers.forEach(m => m.timerSec--);
         const freed = gameState.jailedMembers.filter(m => m.timerSec <= 0);
@@ -745,7 +817,6 @@ window.jailBreakout = function() {
     } else alert("Uang tidak cukup!");
 };
 
-// Tampilan & Pembersihan Otomatis Tombol Tahanan
 function renderJailedMembersList() {
     const container = document.getElementById('jailed-members-container');
     if (!container) return;
@@ -782,7 +853,7 @@ window.bribeFreeJailedMember = function(mId) {
     } else alert("Uang tidak cukup untuk menyuap!");
 };
 
-// EKSPEDISI PENYELUNDUPAN DENGAN TIMEOUT DAN ROTASI (Revisi #2)
+// EKSPEDISI PENYELUNDUPAN
 function rotateExpeditionMissions() {
     const todayStr = new Date().toDateString();
     if (gameState.lastExpeditionDate !== todayStr) {
@@ -791,15 +862,13 @@ function rotateExpeditionMissions() {
     }
 
     const now = Date.now();
-    // Hapus tawaran ekspedisi yang sudah kadaluarsa
     gameState.availableExpeditions = (gameState.availableExpeditions || []).filter(ae => now < ae.expireTime);
 
-    // Ambil acak 1-3 tawaran ekspedisi baru
     if (gameState.availableExpeditions.length < 2) {
         const pickCount = Math.floor(Math.random() * 3) + 1;
         for (let i = 0; i < pickCount; i++) {
             const randExp = ALL_EXPEDITION_MASTER[Math.floor(Math.random() * ALL_EXPEDITION_MASTER.length)];
-            const expireTime = now + (Math.floor(Math.random() * 20) + 20) * 1000; // 20 - 40s batas ambil
+            const expireTime = now + (Math.floor(Math.random() * 20) + 20) * 1000;
             if (!gameState.availableExpeditions.some(ae => ae.expId === randExp.id)) {
                 gameState.availableExpeditions.push({ id: Date.now() + Math.random(), expId: randExp.id, expireTime });
             }
@@ -917,7 +986,7 @@ function renderActiveExpeditions() {
     container.innerHTML = `<div class="game-card"><h4>Ekspedisi Berjalan</h4><p>Sisa Waktu Perjalanan: <strong class="text-yellow">${sisaSec}s</strong></p></div>`;
 }
 
-// EKSPANSI INTERNASIONAL (Revisi #4)
+// EKSPANSI INTERNASIONAL
 function renderGlobalTargets() {
     const container = document.getElementById('global-targets-list');
     const descEl = document.getElementById('global-status-desc');
@@ -991,7 +1060,7 @@ window.bribePolice = function() {
     } else alert("Uang tidak cukup!");
 };
 
-// EVENT ACAK DENGAN REVISI LENGKAP (Revisi #6, #7, #8, #11)
+// EVENT ACAK
 function scheduleNextRandomEvent() {
     const randomMs = (Math.floor(Math.random() * 120) + 60) * 1000;
     setTimeout(() => {
@@ -1035,7 +1104,6 @@ function eventModalTimerTicker() {
 
     if (eventTimerSec <= 0) {
         const defaultChoice = currentActiveEvent.choices[0];
-        // Keterangan Jelas Pilihan Timeout (Revisi #11)
         logMessage(`[TIMEOUT] Waktu habis! Sistem otomatis memilih: '${defaultChoice.text}'`, 'danger');
         handleEventAction(defaultChoice.act, defaultChoice.text);
     }
@@ -1055,7 +1123,6 @@ function handleEventAction(act, choiceText = '') {
             logMessage("Membayar Rp 10 Juta untuk uang damai.", 'danger');
             break;
         case 'close_business':
-            // Revisi #5: Kunci Layar 2 Menit
             gameState.isBusinessClosedTimer = 120;
             logMessage("Bisnis ditutup sementara selama 2 menit. Layar dikunci dari aktivitas!", 'danger');
             break;
@@ -1068,7 +1135,6 @@ function handleEventAction(act, choiceText = '') {
             logMessage("Memperbaiki bisnis yang disabotase (Rp 15 Juta).", 'success');
             break;
         case 'sabotage_destroy':
-            // Revisi #7: Potong Bisnis, jika 0 potong Kas
             const bizKeys = Object.keys(gameState.businesses).filter(k => gameState.businesses[k] > 0);
             if (bizKeys.length > 0) {
                 const targetBiz = bizKeys[0];
@@ -1080,7 +1146,6 @@ function handleEventAction(act, choiceText = '') {
             }
             break;
         case 'buy_blackmarket':
-            // Revisi #6: Pengecekan saldo sebelum beli senjata
             if (gameState.money >= 20000000) {
                 gameState.money -= 20000000;
                 gameState.weapons += 2;
@@ -1091,13 +1156,11 @@ function handleEventAction(act, choiceText = '') {
             }
             break;
         case 'ott_destroy':
-            // Revisi #9: OTT Pilihan A
             if (gameState.money >= 10000000) gameState.money -= 10000000;
             gameState.heat = Math.max(0, gameState.heat - 20);
             logMessage("Dokumen rahasia berhasil dimusnahkan. Biaya kurir Rp 10 Juta, Heat -20%.", 'success');
             break;
         case 'ott_bribe':
-            // Revisi #9: OTT Pilihan B
             if (gameState.money >= 50000000) {
                 gameState.money -= 50000000;
                 if (Math.random() > 0.25) {
@@ -1138,7 +1201,6 @@ function hashCode(str) {
     return hash;
 }
 
-// Auto-Scroll Terminal Log (Revisi #3)
 function logMessage(msg, type = '') {
     const logs = document.getElementById('game-logs');
     if (!logs) return;
@@ -1146,7 +1208,5 @@ function logMessage(msg, type = '') {
     entry.className = `log-entry ${type}`;
     entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
     logs.appendChild(entry);
-
-    // Selalu gulung ke posisi terbawah
     logs.scrollTop = logs.scrollHeight;
 }
