@@ -88,6 +88,7 @@ export async function saveUserDataToCloud(uid, gameState) {
     }
 }
 
+// LEADERBOARD (Revisi #2: Tanpa Mengirim Power)
 export async function fetchLeaderboardData() {
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -95,21 +96,22 @@ export async function fetchLeaderboardData() {
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
             if (data.setupDone) {
-                let pwr = (data.weapons || 0) * 25;
-                (data.members || []).forEach(m => pwr += m.power);
                 const cityCount = Object.keys(data.controlledCities || {}).length;
 
                 players.push({
                     uid: docSnap.id,
                     username: data.username || 'Bos Kartel',
-                    power: pwr,
                     cities: cityCount,
                     money: data.money || 0
                 });
             }
         });
 
-        players.sort((a, b) => b.power - a.power);
+        // Urutkan berdasarkan Jumlah Kota Terkuasai -> Uang Kas
+        players.sort((a, b) => {
+            if (b.cities !== a.cities) return b.cities - a.cities;
+            return b.money - a.money;
+        });
         return players;
     } catch (err) {
         console.error("Fetch leaderboard error:", err);
