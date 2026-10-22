@@ -9,9 +9,18 @@
 </head>
 <body>
 
-<!-- Modal Login / Register -->
+    <!-- Overlay Kunci Layar (Sidak Polisi / Tutup Bisnis) - Revisi #5 -->
+    <div id="lockdown-overlay" class="modal-overlay hidden" style="z-index: 20000; background: rgba(0, 0, 0, 0.95); cursor: not-allowed;">
+        <div class="modal-card border-red" style="pointer-events: none;">
+            <h2 class="text-red">🚨 OPERASI BISNIS DITUTUP SEMENTARA 🚨</h2>
+            <p style="margin-top:10px;">Razia kepolisian sedang berlangsung di wilayah Anda. Layar dikunci sampai razia usai.</p>
+            <div class="jail-timer" style="margin-top:20px;">Sisa Waktu Razia: <strong id="lockdown-timer-count" class="text-yellow">120</strong> detik</div>
+        </div>
+    </div>
+
+    <!-- Modal Login / Register -->
     <div id="auth-modal" class="modal-overlay">
-        <div class="modal-card" style="position: relative; z-index: 1001;">
+        <div class="modal-card">
             <h2 class="gold-text">KARTEL MAFIA INDONESIA</h2>
             <p class="subtitle">MMO Strategi Dunia Hitam</p>
             
@@ -35,7 +44,7 @@
         </div>
     </div>
 
-    <!-- Modal Pilihan Wilayah Awal (Multiplayer Global Claim) -->
+    <!-- Modal Pilihan Wilayah Awal -->
     <div id="setup-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <h2 class="gold-text">PILIH BASECAMP UTAMA</h2>
@@ -61,7 +70,7 @@
             <div class="event-img-banner">🚨</div>
             <h3 class="gold-text" id="event-title">EVENT KARTEL</h3>
             <p id="event-desc">Deskripsi event...</p>
-            <div class="event-timer-badge">Batas Waktu: <strong id="event-timer-count" class="text-yellow">20</strong> detik</div>
+            <div class="event-timer-badge">Batas Waktu Pilih: <strong id="event-timer-count" class="text-yellow">20</strong> detik</div>
             <div id="event-choices" class="event-choices" style="margin-top: 15px;"></div>
         </div>
     </div>
@@ -72,7 +81,7 @@
             <div class="event-img-banner">⛓️</div>
             <h2 class="text-red">Tertangkap Polda!</h2>
             <p id="jail-desc">Anda mendekam di sel tahanan...</p>
-            <div class="jail-timer">Sisa Waktu: <strong id="jail-timer-count" class="text-yellow">0</strong> detik</div>
+            <div class="jail-timer">Sisa Waktu Penjara: <strong id="jail-timer-count" class="text-yellow">0</strong> detik</div>
             
             <div class="jail-actions">
                 <button class="btn btn-gold full-btn" onclick="jailBribe100()">Suap 100% Bebas (Rp 50 Juta)</button>
@@ -82,7 +91,7 @@
         </div>
     </div>
 
-    <!-- Modal Panduan Game (Revisi #8) -->
+    <!-- Modal Panduan Game -->
     <div id="guide-modal" class="modal-overlay hidden">
         <div class="modal-card guide-card-wide">
             <h2 class="gold-text">PANDUAN LENGKAP KARTEL MAFIA</h2>
@@ -92,8 +101,8 @@
                 <h4>2. Aksi Kriminal (Umum & Spesial)</h4>
                 <p>Menghasilkan uang dalam rentang (range) acak. Kriminal spesial membutuhkan Perwira Unik tertentu agar bisa dibuka.</p>
                 <h4>3. Bisnis Haram & Sabotase</h4>
-                <p>Bisnis menghasilkan kas per 1 menit, namun memiliki risiko kecil disabotase oleh mafia AI dari event acak.</p>
-                <h4>4. Ekspedisi & Penjara Anak Buah</h4>
+                <p>Bisnis menghasilkan kas per 1 menit, namun memiliki risiko disabotase oleh mafia AI dari event acak.</p>
+                <h4>4. Ekspedisi & Tahanan Anak Buah</h4>
                 <p>Dibatasi maksimal 2x sehari (reset jam 00:00 WIB). Anak buah yang ditangkap polisi dapat dibebaskan melalui panel asisten.</p>
             </div>
             <button class="btn btn-gold full-btn" onclick="toggleGuideModal(false)">TUTUP PANDUAN</button>
@@ -152,7 +161,7 @@
             </div>
         </header>
 
-        <!-- Navigation Tabs -->
+        <!-- Dynamic Navigation Tabs -->
         <nav class="nav-tabs">
             <button class="nav-btn active" onclick="switchTab('turf-tab')">🗺️ Peta MMO</button>
             <button class="nav-btn" onclick="switchTab('crimes-tab')">🔪 Aksi Kriminal</button>
@@ -182,10 +191,10 @@
                 </div>
             </section>
 
-            <!-- TAB 2: AKSI KRIMINAL (UMUM & SPESIAL DENGAN RANGE) -->
+            <!-- TAB 2: AKSI KRIMINAL -->
             <section id="crimes-tab" class="tab-content">
-                <h3>AKSI KRIMINAL (UMUM & SPESIAL)</h3>
-                <p>Hasil kejahatan bervariasi dalam rentang range tertentu. Kriminal spesial membutuhkan Perwira Unik.</p>
+                <h3>AKSI KRIMINAL (6 UMUM & SPESIAL)</h3>
+                <p>Hasil kejahatan bervariasi dalam rentang range acak. Kriminal spesial membutuhkan Perwira Unik.</p>
                 <div id="active-crime-status-box" class="jail-subpanel hidden" style="border-color: var(--gold); margin-bottom: 20px;">
                     <h4 class="gold-text">AKSI BERJALAN</h4>
                     <p id="active-crime-name-label">Jenis: -</p>
@@ -194,7 +203,7 @@
                 <div class="card-grid" id="crimes-list"></div>
             </section>
 
-            <!-- TAB 3: BISNIS HARAM & SABOTASE -->
+            <!-- TAB 3: BISNIS HARAM -->
             <section id="business-tab" class="tab-content">
                 <h3>BISNIS HARAM & ASET</h3>
                 <p>Menghasilkan kas tiap menit. Waspada terhadap sabotase AI dari event acak!</p>
@@ -222,10 +231,10 @@
                 <div class="card-grid" id="officers-list"></div>
             </section>
 
-            <!-- TAB 6: EKSPEDISI (MAX 2X SEHARI) -->
+            <!-- TAB 6: EKSPEDISI -->
             <section id="expedition-tab" class="tab-content">
                 <h3>EKSPEDISI PENYELUNDUPAN (MAKS 2X / HARI)</h3>
-                <p>Reset otomatis setiap pukul 00:00 WIB.</p>
+                <p>1-3 Pilihan ekspedisi muncul secara acak beserta batas waktu pendaftaran! Reset jam 00:00 WIB.</p>
                 <div id="expedition-limit-info" class="text-yellow" style="margin-bottom: 15px; font-weight:700;"></div>
                 <div class="card-grid" id="expeditions-list"></div>
                 <h4 style="margin-top:25px;">Armada Berjalan</h4>
@@ -235,7 +244,7 @@
             <!-- TAB 7: EKSPANSI INTERNASIONAL -->
             <section id="global-tab" class="tab-content">
                 <h3>EKSPANSI KARTEL DUNIA</h3>
-                <p id="global-status-desc">Kuasai seluruh Indonesia untuk membuka kartel dunia!</p>
+                <p id="global-status-desc" style="font-weight:700;">Kuasai 100% wilayah AI di Indonesia terlebih dahulu!</p>
                 <div class="card-grid" id="global-targets-list"></div>
             </section>
 
@@ -256,7 +265,7 @@
 
         </main>
 
-        <!-- STICKY ASISTEN & TAHANAN (Revisi Bug #1) -->
+        <!-- STICKY ASISTEN & TAHANAN -->
         <div class="assistant-card-sticky">
             <div class="assistant-avatar">💼</div>
             <div class="assistant-speech">
