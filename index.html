@@ -18,7 +18,19 @@
         </div>
     </div>
 
-    <!-- Modal Login / Register (Menu Awal) -->
+    <!-- Modal Peringatan Serangan Real-Time PvP (Untuk Pemain Pertahanan) -->
+    <div id="pvp-defense-modal" class="modal-overlay hidden" style="z-index: 15000;">
+        <div class="modal-card border-red">
+            <h2 class="text-red">🚨 PERINGATAN DARURAT WAR 🚨</h2>
+            <p style="margin-top:10px;" id="pvp-defense-desc">Kota Anda sedang diserang oleh pemain lain!</p>
+            <div class="jail-timer" style="margin: 15px 0;">Pasukan Musuh Tiba Dalam: <strong id="pvp-defense-timer" class="text-yellow">15:00</strong></div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Kirim pasukan bayaran untuk menambah pertahanan kota sebesar +100 PWR!</p>
+            <button class="btn btn-gold full-btn" onclick="hireMercenariesForDefense()">Sewa Pasukan Bayaran (Rp 25 Juta)</button>
+            <button class="btn btn-red full-btn" onclick="ignoreDefense()">Pasrah / Biarkan Bertahan Sendiri</button>
+        </div>
+    </div>
+
+    <!-- Modal Login / Register -->
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-card">
             <h2 class="gold-text">KARTEL MAFIA INDONESIA</h2>
@@ -75,14 +87,21 @@
         </div>
     </div>
 
-    <!-- Modal Penjara Pemain -->
+    <!-- Modal Penjara Pemain & Mini Game Sekering Listrik -->
     <div id="jail-modal" class="modal-overlay hidden">
-        <div class="modal-card event-card border-red">
+        <div class="modal-card event-card border-red" style="max-width: 520px;">
             <div class="event-img-banner">⛓️</div>
             <h2 class="text-red">Tertangkap Polda!</h2>
             <p id="jail-desc">Anda mendekam di sel tahanan...</p>
             <div class="jail-timer">Sisa Waktu Penjara: <strong id="jail-timer-count" class="text-yellow">0</strong> detik</div>
             
+            <div class="jail-subpanel" style="margin: 15px 0; border: 1px dashed var(--gold); padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.5);">
+                <h4 class="gold-text">⚡ MINI GAME: RETAS PANEL SEKERING SEL</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Abaikan daya saklar sel! Tekan urutan saklar yang menyala untuk mematikan listrik tahanan & memotong hukuman 30 detik!</p>
+                <div id="jail-minigame-grid" style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;"></div>
+                <small id="jail-minigame-status" class="text-yellow" style="display: block; margin-top: 8px; font-weight:700;"></small>
+            </div>
+
             <div class="jail-actions">
                 <button class="btn btn-gold full-btn" onclick="jailBribe100()">Suap 100% Bebas (Rp 50 Juta)</button>
                 <button class="btn btn-blue full-btn" onclick="jailLawyer()">Sewa Pengacara (Rp 15 Juta)</button>
@@ -96,14 +115,12 @@
         <div class="modal-card guide-card-wide">
             <h2 class="gold-text">PANDUAN LENGKAP KARTEL MAFIA</h2>
             <div class="guide-content">
-                <h4>1. Basis Multiplayer & Peta</h4>
-                <p>Setiap kota awal unik. Kota yang diklaim pemain lain bisa diserang. Jika menang, Anda menjarah kas lawan dan merebut wilayahnya.</p>
-                <h4>2. Aksi Kriminal (Umum & Spesial)</h4>
-                <p>Menghasilkan uang dalam rentang acak. Kriminal spesial membutuhkan Perwira Unik tertentu agar bisa dibuka.</p>
-                <h4>3. Bisnis Haram & Sabotase</h4>
-                <p>Bisnis menghasilkan kas per 1 menit, namun memiliki risiko disabotase oleh mafia AI dari event acak.</p>
-                <h4>4. Leaderboard & Sync Cloud</h4>
-                <p>Bersaing di Leaderboard berdasarkan Wilayah & Kas. Log aktivitas Anda tersimpan di cloud Firebase secara otomatis saat Anda berganti HP atau PC!</p>
+                <h4>1. Perang PvP 15 Menit & Pasukan Bayaran</h4>
+                <p>Serangan ke wilayah pemain lain membutuhkan proses perjalanan pasukan selama 15 menit. Korban memiliki waktu untuk menyewa pasukan bayaran demi memperkuat pertahanan.</p>
+                <h4>2. Penjara Escalating & Mini Game</h4>
+                <p>Durasi dasar penjara adalah 2 menit dan dikali 1.5x setiap kali Anda ditangkap. Mainkan mini game sekering listrik di dalam sel untuk memotong masa tahanan!</p>
+                <h4>3. Beking Politik & Pilkada</h4>
+                <p>Suntik modal ke Paslon Pilihan dalam Pilkada 3 harian. Menangkan calon untuk mendapatkan hak istimewa perlindungan daerah dan pembagian kas!</p>
             </div>
             <button class="btn btn-gold full-btn" onclick="toggleGuideModal(false)">TUTUP PANDUAN</button>
         </div>
@@ -154,6 +171,10 @@
                     <span id="stat-power" class="stat-value text-red">0 PWR</span>
                 </div>
                 <div class="stat-box">
+                    <span class="stat-label">ESTIMASI PENJARA</span>
+                    <span id="stat-next-jail" class="stat-value text-yellow">2.0 mnt</span>
+                </div>
+                <div class="stat-box">
                     <span class="stat-label">HEAT LEVEL</span>
                     <div class="progress-bg"><div id="heat-bar" class="progress-fill"></div></div>
                     <span id="stat-heat" class="stat-value-sm">0%</span>
@@ -164,6 +185,7 @@
         <!-- Dynamic Navigation Tabs -->
         <nav class="nav-tabs">
             <button class="nav-btn active" onclick="switchTab('turf-tab')">🗺️ Peta MMO</button>
+            <button class="nav-btn" onclick="switchTab('politics-tab')">🏛️ Beking Politik</button>
             <button class="nav-btn" onclick="switchTab('leaderboard-tab')">🏆 Leaderboard</button>
             <button class="nav-btn" onclick="switchTab('crimes-tab')">🔪 Aksi Kriminal</button>
             <button class="nav-btn" onclick="switchTab('business-tab')">🏢 Bisnis Haram</button>
@@ -181,7 +203,7 @@
             <section id="turf-tab" class="tab-content active">
                 <div class="turf-header">
                     <h3>PETA DOMINASI KARTEL INDONESIA</h3>
-                    <p>Serang kota pemain lain untuk merebut wilayah dan menjarah uang kas mereka!</p>
+                    <p>Serang kota pemain lain (Proses Perang 15 Menit) untuk merebut wilayah dan menjarah kas mereka!</p>
                     <div class="province-selector-bar">
                         <label>Pilih Provinsi: </label>
                         <select id="province-view-select" onchange="renderTurfMap()"></select>
@@ -190,9 +212,36 @@
                 <div class="turf-map-container">
                     <div class="map-grid" id="turf-map-grid"></div>
                 </div>
+
+                <h4 style="margin-top:25px;">Armada Perang Berjalan (15 Menit)</h4>
+                <div id="active-wars-grid" class="card-grid"></div>
             </section>
 
-            <!-- TAB 2: LEADERBOARD -->
+            <!-- TAB 2: BEKING POLITIK & PILKADA (Menu Baru) -->
+            <section id="politics-tab" class="tab-content">
+                <div class="turf-header">
+                    <h3>🏛️ BEKING POLITIK & PEMILU DAERAH (PILKADA)</h3>
+                    <p>Suntik modal ke calon pilihan Anda untuk memenangkan pertarungan politik daerah!</p>
+                </div>
+
+                <div class="loan-container" style="margin-bottom: 20px;">
+                    <div class="loan-card" style="border-color: var(--gold);">
+                        <h4 class="gold-text">STATUS FASE PILKADA REAL-TIME</h4>
+                        <p style="margin-top: 5px;">Fase Saat Ini: <strong id="politics-phase-label" class="text-yellow">KAMPANYE & MODAL</strong></p>
+                        <p>Sisa Waktu Fase: <strong id="politics-timer-count" class="text-green">00:00:00</strong></p>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Gubernur Aktif Daerah: <span id="active-governor-badge" class="text-blue">-</span></p>
+                    </div>
+                    <div class="loan-card" style="border-color: var(--blue);">
+                        <h4>📰 CATATAN & BERITA POLITIK LIVE</h4>
+                        <div id="politics-news-feed" style="height: 90px; overflow-y: auto; font-size:0.85rem; color:#a0aab8;"></div>
+                    </div>
+                </div>
+
+                <h4 class="gold-text">DAFTAR PASANGAN CALON GUBERNUR</h4>
+                <div class="card-grid" id="paslon-list-grid"></div>
+            </section>
+
+            <!-- TAB 3: LEADERBOARD -->
             <section id="leaderboard-tab" class="tab-content">
                 <h3>🏆 PAPAN PERINGKAT KARTEL INDONESIA</h3>
                 <p>Peringkat bos mafia terkuat berdasarkan Jumlah Wilayah Terkuasai dan Total Kekayaan Kas!</p>
@@ -213,7 +262,7 @@
                 </div>
             </section>
 
-            <!-- TAB 3: AKSI KRIMINAL -->
+            <!-- TAB 4: AKSI KRIMINAL -->
             <section id="crimes-tab" class="tab-content">
                 <h3>AKSI KRIMINAL (6 UMUM & SPESIAL)</h3>
                 <p>Hasil kejahatan bervariasi dalam rentang range acak. Kriminal spesial membutuhkan Perwira Unik.</p>
@@ -225,14 +274,14 @@
                 <div class="card-grid" id="crimes-list"></div>
             </section>
 
-            <!-- TAB 4: BISNIS HARAM -->
+            <!-- TAB 5: BISNIS HARAM -->
             <section id="business-tab" class="tab-content">
                 <h3>BISNIS HARAM & ASET</h3>
                 <p>Menghasilkan kas tiap menit. Waspada terhadap sabotase AI dari event acak!</p>
                 <div class="card-grid" id="business-list"></div>
             </section>
 
-            <!-- TAB 5: PASUKAN -->
+            <!-- TAB 6: PASUKAN -->
             <section id="rivals-tab" class="tab-content">
                 <h3>MANAJEMEN PASUKAN & SENJATA</h3>
                 <div class="recruitment-banner">
@@ -246,14 +295,14 @@
                 <div id="members-list-grid" class="card-grid"></div>
             </section>
 
-            <!-- TAB 6: PERWIRA UNIK -->
+            <!-- TAB 7: PERWIRA UNIK -->
             <section id="officers-tab" class="tab-content">
                 <h3>PERWIRA UNIK & UNDERBOSS</h3>
                 <p>Membuka kunci aksi kriminal spesial dan memberikan buff pasif.</p>
                 <div class="card-grid" id="officers-list"></div>
             </section>
 
-            <!-- TAB 7: EKSPEDISI -->
+            <!-- TAB 8: EKSPEDISI -->
             <section id="expedition-tab" class="tab-content">
                 <h3>EKSPEDISI PENYELUNDUPAN (MAKS 2X / HARI)</h3>
                 <p>1-3 Pilihan ekspedisi muncul secara acak beserta batas waktu pendaftaran! Reset jam 00:00 WIB.</p>
@@ -263,14 +312,14 @@
                 <div id="active-expeditions-list" class="card-grid"></div>
             </section>
 
-            <!-- TAB 8: EKSPANSI INTERNASIONAL -->
+            <!-- TAB 9: EKSPANSI INTERNASIONAL -->
             <section id="global-tab" class="tab-content">
                 <h3>EKSPANSI KARTEL DUNIA</h3>
                 <p id="global-status-desc" style="font-weight:700;">Kuasai 100% wilayah AI di Indonesia terlebih dahulu!</p>
                 <div class="card-grid" id="global-targets-list"></div>
             </section>
 
-            <!-- TAB 9: SUAP & ORMAS -->
+            <!-- TAB 10: SUAP & ORMAS -->
             <section id="social-tab" class="tab-content">
                 <h3>PENGARUH SOSIAL & SUAP</h3>
                 <div class="loan-container">
