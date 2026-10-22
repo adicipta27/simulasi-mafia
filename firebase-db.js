@@ -35,7 +35,6 @@ export {
     onAuthStateChanged 
 };
 
-// Ambil semua klaim kota pemain global
 export async function fetchGlobalOccupiedCities() {
     try {
         const snap = await getDoc(doc(db, "meta", "occupied_cities"));
@@ -47,7 +46,6 @@ export async function fetchGlobalOccupiedCities() {
     }
 }
 
-// Daftarkan / Transfer klaim kota di database global
 export async function updateCityOccupantGlobal(cityName, uid, username) {
     try {
         const ref = doc(db, "meta", "occupied_cities");
@@ -90,7 +88,6 @@ export async function saveUserDataToCloud(uid, gameState) {
     }
 }
 
-// Ambil seluruh data pemain untuk LEADERBOARD (Revisi #1)
 export async function fetchLeaderboardData() {
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -112,7 +109,6 @@ export async function fetchLeaderboardData() {
             }
         });
 
-        // Urutkan berdasarkan Power Tempur tertinggi
         players.sort((a, b) => b.power - a.power);
         return players;
     } catch (err) {
