@@ -51,7 +51,7 @@ function createDefaultGameState() {
         lastExpeditionDate: '',
         peaceShieldUntil: 0,
         isBusinessClosedTimer: 0,
-        gameLogs: [] // Penyimpanan log operasional
+        gameLogs: []
     };
 }
 
@@ -96,7 +96,7 @@ function setupAuthListeners() {
                 document.getElementById('setup-modal').classList.add('hidden');
                 document.getElementById('game-container').classList.remove('hidden');
                 initUI();
-                renderLogs(); // Muat log tersimpan
+                renderLogs();
             }
         } else {
             currentUser = null;
@@ -213,10 +213,9 @@ window.submitInitialSetup = async function() {
     document.getElementById('setup-modal').classList.add('hidden');
     document.getElementById('game-container').classList.remove('hidden');
 
+    logMessage(`Basecamp didirikan di ${cName}. Selamat berjuang, Boss!`, 'success');
     await cloudAutosaveInterval();
     initUI();
-    renderLogs();
-    setAssistantMessage(`Basecamp didirikan di ${cName}. Selamat berjuang, Boss!`);
 };
 
 async function cloudAutosaveInterval() {
@@ -362,13 +361,14 @@ window.switchTab = function(tabId) {
     if (tabId === 'leaderboard-tab') renderLeaderboard();
 };
 
+// RENDERING LEADERBOARD (Revisi #2: Hapus Power Tempur)
 async function renderLeaderboard() {
     const tbody = document.getElementById('leaderboard-body');
     if (!tbody) return;
 
     const players = await fetchLeaderboardData();
     if (players.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada data pemain lain.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada data pemain lain.</td></tr>';
         return;
     }
 
@@ -380,7 +380,6 @@ async function renderLeaderboard() {
         tr.innerHTML = `
             <td>#${idx + 1}</td>
             <td><strong>${p.username}</strong> ${p.uid === currentUser.uid ? '<span class="text-yellow">(Anda)</span>' : ''}</td>
-            <td class="text-red"><strong>${p.power} PWR</strong></td>
             <td class="text-blue">${p.cities} Kota</td>
             <td class="text-green">Rp ${p.money.toLocaleString('id-ID')}</td>
         `;
@@ -388,7 +387,7 @@ async function renderLeaderboard() {
     });
 }
 
-// PETA WILAYAH & PERANG PVP (Revisi Sinkronisasi Rebut Balik)
+// PETA WILAYAH & PERANG PVP
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -1050,6 +1049,7 @@ window.bribePolice = function() {
     } else alert("Uang tidak cukup!");
 };
 
+// EVENT ACAK - PEMERIKSAAN & REVISI LOGIKA (Revisi #3)
 function scheduleNextRandomEvent() {
     const randomMs = (Math.floor(Math.random() * 120) + 60) * 1000;
     setTimeout(() => {
@@ -1093,7 +1093,7 @@ function eventModalTimerTicker() {
 
     if (eventTimerSec <= 0) {
         const defaultChoice = currentActiveEvent.choices[0];
-        logMessage(`[TIMEOUT] Waktu habis! Sistem otomatis memilih: '${defaultChoice.text}'`, 'danger');
+        logMessage(`[TIMEOUT] Waktu habis! Sistem memilih otomatis: '${defaultChoice.text}'`, 'danger');
         handleEventAction(defaultChoice.act, defaultChoice.text);
     }
 }
@@ -1104,24 +1104,40 @@ function handleEventAction(act, choiceText = '') {
 
     switch(act) {
         case 'fight_rival':
-            if (getPlayerTotalPower() >= 150) logMessage("Berhasil memukul mundur geng rival!", 'success');
-            else { gameState.money = Math.max(0, gameState.money - 15000000); logMessage("Kekuatan kurang! Bisnis dirusak, rugi Rp 15 Juta.", 'danger'); }
+            if (getPlayerTotalPower() >= 150) {
+                logMessage("Berhasil memukul mundur geng rival!", 'success');
+            } else {
+                const penalty = Math.min(gameState.money, 15000000);
+                gameState.money -= penalty;
+                logMessage(`Kekuatan kurang! Bisnis diserang, rugi Rp ${penalty.toLocaleString('id-ID')}.`, 'danger');
+            }
             break;
         case 'pay_peace':
-            gameState.money = Math.max(0, gameState.money - 10000000);
-            logMessage("Membayar Rp 10 Juta untuk uang damai.", 'danger');
+            if (gameState.money >= 10000000) {
+                gameState.money -= 10000000;
+                logMessage("Membayar Rp 10 Juta untuk uang damai.", 'danger');
+            } else {
+                logMessage("Kas tidak cukup bayar uang damai! Markas dijarah rival.", 'danger');
+                gameState.money = 0;
+            }
             break;
         case 'close_business':
             gameState.isBusinessClosedTimer = 120;
-            logMessage("Bisnis ditutup sementara selama 2 menit. Layar dikunci dari aktivitas!", 'danger');
+            logMessage("Bisnis ditutup sementara selama 2 menit (Sidak Polisi).", 'danger');
             break;
         case 'ignore_heat':
             gameState.heat = Math.min(100, gameState.heat + 15);
-            logMessage("Menghiraukan sidak polisi. Heat +15%.", 'danger');
+            logMessage("Menghiraukan sidak polisi. Heat Level +15%.", 'danger');
             break;
         case 'sabotage_fix':
-            gameState.money = Math.max(0, gameState.money - 15000000);
-            logMessage("Memperbaiki bisnis yang disabotase (Rp 15 Juta).", 'success');
+            if (gameState.money >= 15000000) {
+                gameState.money -= 15000000;
+                logMessage("Memperbaiki bisnis yang disabotase (Rp 15 Juta).", 'success');
+            } else {
+                logMessage("Uang kas tidak cukup untuk perbaikan sabotase!", 'danger');
+                handleEventAction('sabotage_destroy', 'Hancur');
+                return;
+            }
             break;
         case 'sabotage_destroy':
             const bizKeys = Object.keys(gameState.businesses).filter(k => gameState.businesses[k] > 0);
@@ -1130,8 +1146,9 @@ function handleEventAction(act, choiceText = '') {
                 gameState.businesses[targetBiz]--;
                 logMessage(`Bisnis '${targetBiz}' hancur disabotase mafia AI!`, 'danger');
             } else {
-                gameState.money = Math.max(0, gameState.money - 10000000);
-                logMessage("Tidak memiliki bisnis! Sabotase AI memotong kas sebesar Rp 10 Juta.", 'danger');
+                const loss = Math.min(gameState.money, 10000000);
+                gameState.money -= loss;
+                logMessage(`Tidak ada bisnis aktif. Sabotase AI memotong kas sebesar Rp ${loss.toLocaleString('id-ID')}.`, 'danger');
             }
             break;
         case 'buy_blackmarket':
@@ -1140,14 +1157,18 @@ function handleEventAction(act, choiceText = '') {
                 gameState.weapons += 2;
                 logMessage("Membeli pasokan senjata gelap borongan (+50 PWR).", 'success');
             } else {
-                alert("Uang kas tidak cukup (butuh Rp 20 Juta)! Transaksi senjata dibatalkan.");
+                alert("Uang kas tidak cukup (butuh Rp 20 Juta)! Transaksi dibatalkan.");
                 logMessage("Gagal membeli senjata gelap karena kas kurang.", 'danger');
             }
             break;
         case 'ott_destroy':
-            if (gameState.money >= 10000000) gameState.money -= 10000000;
-            gameState.heat = Math.max(0, gameState.heat - 20);
-            logMessage("Dokumen rahasia berhasil dimusnahkan. Biaya kurir Rp 10 Juta, Heat -20%.", 'success');
+            if (gameState.money >= 10000000) {
+                gameState.money -= 10000000;
+                gameState.heat = Math.max(0, gameState.heat - 20);
+                logMessage("Dokumen rahasia dimusnahkan. Biaya kurir Rp 10 Juta, Heat -20%.", 'success');
+            } else {
+                logMessage("Kas kurang untuk bayar kurir pemusnah dokumen!", 'danger');
+            }
             break;
         case 'ott_bribe':
             if (gameState.money >= 50000000) {
@@ -1156,13 +1177,68 @@ function handleEventAction(act, choiceText = '') {
                     gameState.heat = 0;
                     logMessage("Penyidik KPK berhasil disogok Rp 50 Juta! Heat bersih 0%.", 'success');
                 } else {
-                    alert("Sogokan ditolak penyidik jujur! Waktu penjara bertambah!");
+                    alert("Sogokan ditolak penyidik jujur! Anda ditangkap!");
                     triggerPlayerJail();
                 }
             } else alert("Uang kas tidak cukup untuk menyogok penyidik KPK!");
             break;
+        case 'trait_pay':
+            if (gameState.money >= 8000000) {
+                gameState.money -= 8000000;
+                logMessage("Membayar informan Rp 8 Juta untuk bungkam.", 'success');
+            } else {
+                logMessage("Uang kurang! Bocoran lokasi kas membuat modal hilang Rp 5 Juta.", 'danger');
+                gameState.money = Math.max(0, gameState.money - 5000000);
+            }
+            break;
+        case 'trait_kill':
+            if (gameState.members.length > 0) {
+                removeRandomMembers(1, 1);
+                logMessage("Pengkhianat dieksekusi mati. 1 Pasukan hilang.", 'danger');
+            } else {
+                logMessage("Tidak ada pasukan untuk eksekusi! Informasi kas bocor.", 'danger');
+            }
+            break;
+        case 'media_bribe':
+            if (gameState.money >= 12000000) {
+                gameState.money -= 12000000;
+                logMessage("Suap wartawan Rp 12 Juta sukses.", 'success');
+            } else {
+                logMessage("Uang kurang untuk suap wartawan! Media merilis berita, Heat +10%.", 'danger');
+                gameState.heat = Math.min(100, gameState.heat + 10);
+            }
+            break;
+        case 'media_terror':
+            gameState.heat = Math.min(100, gameState.heat + 20);
+            logMessage("Menteror media! Heat Level +20%.", 'danger');
+            break;
+        case 'social_aid':
+            if (gameState.money >= 10000000) {
+                gameState.money -= 10000000;
+                gameState.heat = Math.max(0, gameState.heat - 10);
+                logMessage("Membagi sembako ke warga. Heat -10%.", 'success');
+            } else {
+                logMessage("Kas tidak cukup untuk beli sembako warga!", 'danger');
+            }
+            break;
+        case 'dispers_crowd':
+            gameState.heat = Math.min(100, gameState.heat + 15);
+            logMessage("Membubarkan demo warga secara paksa! Heat +15%.", 'danger');
+            break;
+        case 'alliance_yes':
+            gameState.money += 30000000;
+            logMessage("Aliansi Ormas diterima! Mendapatkan dana Rp 30 Juta.", 'success');
+            break;
+        case 'alliance_no':
+            removeRandomMembers(1, 1);
+            logMessage("Menolak aliansi Ormas! Terjadi bentrok, 1 pasukan gugur.", 'danger');
+            break;
+        case 'mentor_money':
+            gameState.money += 100000000;
+            logMessage("Suntikan modal mentor diterima! Kas +Rp 100 Juta.", 'success');
+            break;
         default:
-            gameState.money += 10000000;
+            logMessage("Event selesai tanpa dampak langsung.", 'info');
             break;
     }
     updateUI();
@@ -1178,14 +1254,13 @@ window.resetGameProgress = async function() {
     if (!confirm("Reset total progress?")) return;
     gameState = createDefaultGameState();
     payoutCountdownSec = 60;
-    localStorage.removeItem(`mafia_logs_${currentUser?.uid}`);
     await cloudAutosaveInterval();
     location.reload();
 };
 
 function getProvinceObj(pId) { return PROVINCES.find(p => p.id === pId); }
 
-// SISTEM CATATAN OPERASIONAL PERMANEN & MAKSIMAL 5 LOG (Revisi #1)
+// LOGITAS OPERASIONAL DENGAN SYNC CLOUD (Revisi #1)
 function logMessage(msg, type = '') {
     if (!currentUser) return;
     if (!gameState.gameLogs) gameState.gameLogs = [];
@@ -1196,30 +1271,19 @@ function logMessage(msg, type = '') {
         type: type
     };
 
-    // Tambahkan ke urutan paling atas
     gameState.gameLogs.unshift(newLog);
 
-    // Batasi maksimal hanya 5 log terbaru
     if (gameState.gameLogs.length > 5) {
         gameState.gameLogs = gameState.gameLogs.slice(0, 5);
     }
 
-    // Simpan ke localStorage browser agar tidak hilang saat refresh
-    localStorage.setItem(`mafia_logs_${currentUser.uid}`, JSON.stringify(gameState.gameLogs));
-
     renderLogs();
+    cloudAutosaveInterval(); // Simpan otomatis ke cloud Firestore
 }
 
 function renderLogs() {
-    if (!currentUser) return;
     const logsContainer = document.getElementById('game-logs');
     if (!logsContainer) return;
-
-    // Ambil dari localStorage jika ada
-    const savedLogs = localStorage.getItem(`mafia_logs_${currentUser.uid}`);
-    if (savedLogs) {
-        gameState.gameLogs = JSON.parse(savedLogs);
-    }
 
     logsContainer.innerHTML = '';
     if (!gameState.gameLogs || gameState.gameLogs.length === 0) {
