@@ -26,7 +26,7 @@ import {
     EVENTS_MASTER 
 } from "./config.js";
 
-// WEB AUDIO SYNTHESIZER (Penyedia Suara In-Game Internal)
+// WEB AUDIO SYNTHESIZER
 class AudioSynth {
     constructor() {
         this.ctx = null;
@@ -45,8 +45,8 @@ class AudioSynth {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3); // C6
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
         gain.gain.setValueAtTime(0.3, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
         osc.connect(gain);
@@ -121,7 +121,7 @@ function createDefaultGameState() {
         heat: 0,
         isJailed: false,
         jailTimerSec: 0,
-        jailTimesCount: 0, // Penalti penangkapan
+        jailTimesCount: 0,
         members: [
             { id: Date.now() + 1, power: Math.floor(Math.random() * 5) + 1 },
             { id: Date.now() + 2, power: Math.floor(Math.random() * 5) + 1 }
@@ -134,7 +134,8 @@ function createDefaultGameState() {
         activeExpedition: null,
         availableExpeditions: [],
         activeCrime: null,
-        activePvPWars: [], // Daftar perang PvP
+        activePvPWars: [],
+        incomingPvPAttack: [], // Serangan masuk saat offline/online
         expeditionCountToday: 0,
         lastExpeditionDate: '',
         peaceShieldUntil: 0,
@@ -151,10 +152,9 @@ let currentActiveEvent = null;
 let eventTimerSec = 20;
 let globalOccupiedMap = {};
 
-// PILKADA STATE
 let globalPilkada = {
-    phase: 'KAMPANYE', // KAMPANYE, QUICK_COUNT, MASA_JABATAN
-    phaseEndTime: Date.now() + (10 * 60 * 60 * 1000), // Default 10 Jam Kampanye
+    phase: 'KAMPANYE',
+    phaseEndTime: Date.now() + (10 * 60 * 60 * 1000),
     paslon: [
         { id: 1, name: 'H. Syamsul - Ormas Pesisir', desc: 'Pertahanan Kota +30%', totalFund: 0, usersContrib: {} },
         { id: 2, name: 'Kombes (Purn) M. Yasin', desc: 'Heat Level Turun 2x Cepat & Diskon Suap 50%', totalFund: 0, usersContrib: {} },
@@ -164,7 +164,6 @@ let globalPilkada = {
     newsFeed: ['Pilkada Serentak Resmi Dibuka! Para paslon mulai menggalang dana modal politik.']
 };
 
-// MINI GAME JAIL STATE
 let jailMiniGamePattern = [];
 let jailMiniGameUserIdx = 0;
 
@@ -198,7 +197,6 @@ function setupAuthListeners() {
 
             gameState.username = user.email.split('@')[0];
 
-            // Load Pilkada State
             const cloudPilkada = await fetchGlobalPilkadaData();
             if (cloudPilkada) globalPilkada = cloudPilkada;
 
@@ -210,6 +208,9 @@ function setupAuthListeners() {
                 document.getElementById('game-container').classList.remove('hidden');
                 initUI();
                 renderLogs();
+
+                // PERBAIKAN: Langsung periksa serangan PvP masuk saat LOGIN dari offline!
+                checkIncomingPvPDefenseModal();
             }
         } else {
             currentUser = null;
@@ -390,7 +391,6 @@ function calculateTotalIncome1Min() {
         income += (gameState.businesses[b.id] || 0) * b.income;
     });
 
-    // Buff Paslon 3 Pilkada
     if (globalPilkada.winnerId === 3) income *= 1.25;
 
     const controlledCount = Object.keys(gameState.controlledCities).length;
@@ -416,7 +416,7 @@ function getPlayerTotalPower() {
 
 function getNextJailDurationSec() {
     const times = gameState.jailTimesCount || 0;
-    const baseSec = 120; // 2 Menit
+    const baseSec = 120;
     return Math.floor(baseSec * Math.pow(1.5, times));
 }
 
@@ -516,7 +516,7 @@ async function renderLeaderboard() {
     });
 }
 
-// PETA WILAYAH & PERANG PVP 15 MENIT DENGAN WARNING REAL-TIME
+// PETA WILAYAH & PERANG PVP 15 MENIT
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -601,9 +601,8 @@ window.startPvPWar15Min = async function(cityName) {
         return;
     }
 
-    // Buat objek perang 15 menit
     audioFX.playWarDrum();
-    const warEndTime = Date.now() + (15 * 60 * 1000); // 15 Menit
+    const warEndTime = Date.now() + (15 * 60 * 1000);
     const newWar = {
         warId: Date.now(),
         cityName: cityName,
@@ -617,7 +616,7 @@ window.startPvPWar15Min = async function(cityName) {
     if (!gameState.activePvPWars) gameState.activePvPWars = [];
     gameState.activePvPWars.push(newWar);
 
-    // Kirim sinyal warning real-time ke target jika target online
+    // SIMPAN LANGSUNG KE FIRESTORE PEMAIN TARGET AGAR SINKRON SAAT DIA LOGIN
     if (targetCloudData) {
         if (!targetCloudData.incomingPvPAttack) targetCloudData.incomingPvPAttack = [];
         targetCloudData.incomingPvPAttack.push({
@@ -630,6 +629,7 @@ window.startPvPWar15Min = async function(cityName) {
     }
 
     logMessage(`MEMULAI SERANGAN 15 MENIT ke ${cityName} milik ${occupant.username}! Pasukan sedang dalam perjalanan.`, 'danger');
+    await cloudAutosaveInterval();
     updateUI();
 };
 
@@ -642,16 +642,14 @@ function pvpWarsTicker() {
     const now = Date.now();
     gameState.activePvPWars.forEach(async (war) => {
         if (now >= war.endTime) {
-            // Eksekusi perang saat 15 menit usai
             const targetCloudData = await loadUserDataFromCloud(war.targetUid);
             let targetPwr = 200;
             if (targetCloudData) {
                 targetPwr = (targetCloudData.weapons || 0) * 25;
                 (targetCloudData.members || []).forEach(m => targetPwr += m.power);
-                if (targetCloudData.defendingMercenaries) targetPwr += 100; // Pasukan bayaran korban
+                if (targetCloudData.defendingMercenaries) targetPwr += 100;
             }
 
-            // Buff Pertahanan Paslon 1 Pilkada
             if (globalPilkada.winnerId === 1) targetPwr = Math.floor(targetPwr * 1.3);
 
             if (war.attackerPwr > targetPwr) {
@@ -680,7 +678,6 @@ function pvpWarsTicker() {
                 logMessage(`PERANG SELESAI: Serangan ke ${war.cityName} dipukul mundur oleh pertahanan ${war.targetUsername}. Pasukan gugur.`, 'danger');
             }
 
-            // Hapus dari daftar perang aktif
             gameState.activePvPWars = gameState.activePvPWars.filter(w => w.warId !== war.warId);
             updateUI();
         }
@@ -719,6 +716,7 @@ function renderActivePvPWars() {
     });
 }
 
+// PERBAIKAN: MENAMPILKAN MODAL DEFENSE DARURAT SAAT PLAYER BARU LOGIN / ONLINE
 function checkIncomingPvPDefenseModal() {
     const modal = document.getElementById('pvp-defense-modal');
     if (!gameState.incomingPvPAttack || gameState.incomingPvPAttack.length === 0) {
@@ -726,8 +724,17 @@ function checkIncomingPvPDefenseModal() {
         return;
     }
 
+    const now = Date.now();
+    // Filter serangan yang masih berlaku (belum kadaluarsa)
+    gameState.incomingPvPAttack = gameState.incomingPvPAttack.filter(atk => now < atk.endTime);
+
+    if (gameState.incomingPvPAttack.length === 0) {
+        if (modal) modal.classList.add('hidden');
+        return;
+    }
+
     const atk = gameState.incomingPvPAttack[0];
-    const sisaSec = Math.max(0, Math.ceil((atk.endTime - Date.now()) / 1000));
+    const sisaSec = Math.max(0, Math.ceil((atk.endTime - now) / 1000));
     const min = Math.floor(sisaSec / 60);
     const sec = sisaSec % 60;
 
@@ -738,20 +745,17 @@ function checkIncomingPvPDefenseModal() {
         audioFX.playSiren();
         modal.classList.remove('hidden');
     }
-
-    if (sisaSec <= 0) {
-        gameState.incomingPvPAttack.shift();
-        if (modal) modal.classList.add('hidden');
-    }
 }
 
-window.hireMercenariesForDefense = function() {
+window.hireMercenariesForDefense = async function() {
     if (gameState.money >= 25000000) {
+        audioFX.playSuccess();
         gameState.money -= 25000000;
         gameState.defendingMercenaries = true;
         alert("Berhasil menyewa pasukan bayaran! Pertahanan kota meningkat +100 PWR.");
         logMessage("Sewa Pasukan Bayaran Rp 25 Juta untuk pertahanan kota.", 'success');
         document.getElementById('pvp-defense-modal').classList.add('hidden');
+        await cloudAutosaveInterval();
         updateUI();
     } else alert("Uang kas tidak cukup (Butuh Rp 25 Juta)!");
 };
@@ -778,7 +782,6 @@ function renderPilkadaUI() {
         if (govBadge) govBadge.innerText = 'Masa Kampanye / Kosong';
     }
 
-    // Render Live News
     if (newsContainer) {
         newsContainer.innerHTML = '';
         (globalPilkada.newsFeed || []).forEach(news => {
@@ -789,7 +792,6 @@ function renderPilkadaUI() {
         });
     }
 
-    // Render Cards Paslon
     grid.innerHTML = '';
     let totalAllModal = 0;
     globalPilkada.paslon.forEach(p => totalAllModal += p.totalFund);
@@ -834,17 +836,14 @@ function pilkadaTicker() {
 
     if (now >= globalPilkada.phaseEndTime) {
         if (globalPilkada.phase === 'KAMPANYE') {
-            // Pindah ke Quick Count
             globalPilkada.phase = 'QUICK_COUNT';
-            globalPilkada.phaseEndTime = now + (2 * 60 * 60 * 1000); // 2 Jam
+            globalPilkada.phaseEndTime = now + (2 * 60 * 60 * 1000);
             globalPilkada.newsFeed.unshift("Masa Kampanye ditutup! Lapor hitung cepat / Quick Count dimulai...");
             executePilkadaWinnerSelection();
         } else if (globalPilkada.phase === 'QUICK_COUNT') {
-            // Pindah ke Masa Jabatan 3 Hari
             globalPilkada.phase = 'MASA_JABATAN';
-            globalPilkada.phaseEndTime = now + (3 * 24 * 60 * 60 * 1000); // 3 Hari
+            globalPilkada.phaseEndTime = now + (3 * 24 * 60 * 60 * 1000);
         } else if (globalPilkada.phase === 'MASA_JABATAN') {
-            // Reset Pilkada Baru
             globalPilkada.phase = 'KAMPANYE';
             globalPilkada.phaseEndTime = now + (10 * 60 * 60 * 1000);
             globalPilkada.winnerId = null;
@@ -910,7 +909,7 @@ window.seranganFajar = function(paslonId) {
         gameState.money -= 25000000;
         const p = globalPilkada.paslon.find(x => x.id === paslonId);
         if (p) {
-            p.totalFund += 35000000; // Bonus nilai suara dari politik uang
+            p.totalFund += 35000000;
             if (!p.usersContrib) p.usersContrib = {};
             p.usersContrib[currentUser.uid] = (p.usersContrib[currentUser.uid] || 0) + 25000000;
             globalPilkada.newsFeed.unshift(`🚨 DANA GELAP / SERANGAN FAJAR dieksekusi untuk ${p.name}! Suara mendongkrak pesat!`);
@@ -1235,7 +1234,7 @@ function jailTicker() {
 
 window.jailBribe100 = function() {
     let cost = 50000000;
-    if (globalPilkada.winnerId === 2) cost *= 0.5; // Diskon Paslon 2
+    if (globalPilkada.winnerId === 2) cost *= 0.5;
 
     if (gameState.money >= cost) {
         audioFX.playSuccess();
@@ -1429,7 +1428,7 @@ function expeditionTicker() {
         const expType = ALL_EXPEDITION_MASTER.find(x => x.id === exp.expId);
         if (expType) {
             let riskVal = expType.risk;
-            if (gameState.officers['siti_mawar']) riskVal -= 0.15; // Buff Siti Mawar
+            if (gameState.officers['siti_mawar']) riskVal -= 0.15;
 
             if (Math.random() > riskVal) {
                 audioFX.playSuccess();
