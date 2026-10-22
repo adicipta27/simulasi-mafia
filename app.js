@@ -1,7 +1,26 @@
-import { auth, db, fetchGlobalOccupiedCities, claimBasecampGlobal, loadUserDataFromCloud, saveUserDataToCloud } from "./firebase-db.js";
-import { PROVINCES, GLOBAL_TARGETS, RIVAL_NAMES, CRIMES_DATA, BUSINESS_DATA, ALL_EXPEDITION_MASTER, OFFICERS_MASTER, EVENTS_MASTER } from "./config.js";
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    auth, 
+    db, 
+    fetchGlobalOccupiedCities, 
+    claimBasecampGlobal, 
+    loadUserDataFromCloud, 
+    saveUserDataToCloud, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged 
+} from "./firebase-db.js";
+
+import { 
+    PROVINCES, 
+    GLOBAL_TARGETS, 
+    RIVAL_NAMES, 
+    CRIMES_DATA, 
+    BUSINESS_DATA, 
+    ALL_EXPEDITION_MASTER, 
+    OFFICERS_MASTER, 
+    EVENTS_MASTER 
+} from "./config.js";
 
 function createDefaultGameState() {
     return {
@@ -27,8 +46,8 @@ function createDefaultGameState() {
         activeCrime: null,
         expeditionCountToday: 0,
         lastExpeditionDate: '',
-        peaceShieldUntil: 0, // Proteksi Peace Shield (timestamp)
-        isBusinessClosedTimer: 0 // Durasi tutup bisnis sementara sidak polisi
+        peaceShieldUntil: 0,
+        isBusinessClosedTimer: 0
     };
 }
 
@@ -40,6 +59,7 @@ let currentActiveEvent = null;
 let eventTimerSec = 20;
 let globalOccupiedMap = {};
 
+// INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
     setupAuthListeners();
     populateSetupSelects();
@@ -51,6 +71,7 @@ window.addEventListener('DOMContentLoaded', () => {
     scheduleNextRandomEvent();
 });
 
+// AUTH SYSTEM
 function setupAuthListeners() {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -73,7 +94,7 @@ function setupAuthListeners() {
         } else {
             currentUser = null;
             gameState = createDefaultGameState();
-            document.getElementById('auth-modal').classList.add('hidden');
+            document.getElementById('auth-modal').classList.remove('hidden');
             document.getElementById('game-container').classList.add('hidden');
             document.getElementById('setup-modal').classList.add('hidden');
         }
@@ -89,11 +110,17 @@ window.switchAuthTab = function(mode) {
 
 window.handleAuthSubmit = async function(e) {
     e.preventDefault();
-    const username = document.getElementById('auth-username').value.trim();
+    const usernameInput = document.getElementById('auth-username').value.trim();
     const password = document.getElementById('auth-password').value.trim();
     const errorEl = document.getElementById('auth-error');
     errorEl.innerText = "";
-    const email = `${username.toLowerCase()}@mafia.mmo`;
+
+    if (!usernameInput || !password) {
+        errorEl.innerText = "Username dan Password tidak boleh kosong!";
+        return;
+    }
+
+    const email = `${usernameInput.toLowerCase()}@mafia.mmo`;
 
     try {
         if (currentAuthMode === 'login') {
@@ -103,13 +130,24 @@ window.handleAuthSubmit = async function(e) {
             await cloudAutosaveInterval();
         }
     } catch (err) {
-        errorEl.innerText = "Error: " + err.message;
+        console.error("Auth Error Code:", err.code);
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+            errorEl.innerText = "Gagal masuk: Username atau kata sandi salah.";
+        } else if (err.code === 'auth/email-already-in-use') {
+            errorEl.innerText = "Username sudah digunakan akun lain.";
+        } else if (err.code === 'auth/weak-password') {
+            errorEl.innerText = "Kata sandi terlalu lemah (minimal 6 karakter).";
+        } else {
+            errorEl.innerText = "Error: " + err.message;
+        }
     }
 };
 
-window.logout = function() { signOut(auth); };
+window.logout = function() { 
+    signOut(auth).catch((err) => console.error("SignOut error:", err)); 
+};
 
-// SETUP AWAL DENGAN CEK GLOBAL CLAIM
+// SETUP BASECAMP MULTIPLAYER
 async function populateSetupSelects() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const pSelect = document.getElementById('setup-province-select');
@@ -182,7 +220,6 @@ async function cloudAutosaveInterval() {
 function secondTicker() {
     if (!currentUser || !gameState.setupDone) return;
 
-    // Handle Bisnis Tutup Sementara (Sidak Polisi)
     if (gameState.isBusinessClosedTimer > 0) {
         gameState.isBusinessClosedTimer--;
     }
@@ -217,7 +254,7 @@ function secondTicker() {
 }
 
 function calculateTotalIncome1Min() {
-    if (gameState.isBusinessClosedTimer > 0) return 0; // Tidak ada pemasukan saat bisnis ditutup sementara
+    if (gameState.isBusinessClosedTimer > 0) return 0;
     let income = 0;
     BUSINESS_DATA.forEach(b => {
         income += (gameState.businesses[b.id] || 0) * b.income;
@@ -270,7 +307,6 @@ function updateUI() {
 
     const income = calculateTotalIncome1Min();
     const expenses = calculateTotalExpenses1Min();
-    const net = income - expenses;
 
     document.getElementById('stat-money').innerText = `Rp ${gameState.money.toLocaleString('id-ID')}`;
     document.getElementById('stat-income').innerText = `+Rp ${income.toLocaleString('id-ID')}`;
@@ -297,7 +333,7 @@ window.switchTab = function(tabId) {
     if (event && event.target) event.target.classList.add('active');
 };
 
-// PETA WILAYAH & PVP MMO ATTACK
+// PETA WILAYAH & MMO PVP
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -364,13 +400,11 @@ window.reclaimCity = function(cityName) {
     updateUI();
 };
 
-// Fitur Serang Pemain Lain (MMO Asynchronous Battle)
 window.attackPlayerCity = async function(cityName) {
     const occupant = globalOccupiedMap[cityName];
     if (!occupant) return;
 
     const myPwr = getPlayerTotalPower();
-    // Simulasi power target berdasarkan total power rata-rata (default 200 PWR)
     const targetPwr = 200; 
 
     if (myPwr >= targetPwr) {
@@ -385,7 +419,7 @@ window.attackPlayerCity = async function(cityName) {
     }
 };
 
-// AKSI KRIMINAL DENGAN RANGE REWARD & KRIMINAL SPESIAL (Revisi #2)
+// AKSI KRIMINAL
 function renderCrimes() {
     const container = document.getElementById('crimes-list');
     if (!container) return;
@@ -458,7 +492,6 @@ function crimeSingleTicker() {
             if (gameState.officers['akbp_hendro']) heatInc *= 0.7;
 
             if (Math.random() < 0.75) {
-                // Hitung reward acak dalam rentang range (Revisi #2)
                 const earned = Math.floor(Math.random() * (c.maxReward - c.minReward + 1)) + c.minReward;
                 gameState.money += earned;
                 gameState.heat = Math.min(100, gameState.heat + heatInc);
@@ -615,7 +648,7 @@ window.hireOfficer = function(oId) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// PENJARA & BANTUAN TAHANAN (Revisi Bug #1)
+// PENJARA & BANTUAN TAHANAN
 function triggerPlayerJail() {
     gameState.isJailed = true;
     gameState.jailTimerSec = Math.floor(Math.random() * 40) + 20;
@@ -671,7 +704,7 @@ window.jailBreakout = function() {
         if (Math.random() < 0.3) {
             gameState.isJailed = false;
             gameState.heat = 50;
-            document.getElementById('jail-modal'].classList.add('hidden');
+            document.getElementById('jail-modal').classList.add('hidden');
             logMessage("Serbuan penjara berhasil!", 'success');
         } else {
             alert("Gagal! Waktu bertambah 15 detik.");
@@ -682,7 +715,6 @@ window.jailBreakout = function() {
     } else alert("Uang tidak cukup!");
 };
 
-// Perbaikan Bug #1: Tampilan Tahanan & Tombol Bebaskan di Asisten
 function renderJailedMembersList() {
     const container = document.getElementById('jailed-members-container');
     if (!container) return;
@@ -714,7 +746,7 @@ window.bribeFreeJailedMember = function(mId) {
     } else alert("Uang tidak cukup!");
 };
 
-// EKSPEDISI (MAKS 2X SEHARI, RESET 00:00 WIB - Revisi #4)
+// EKSPEDISI PENYELUNDUPAN
 function rotateExpeditionMissions() {
     const todayStr = new Date().toDateString();
     if (gameState.lastExpeditionDate !== todayStr) {
@@ -887,7 +919,7 @@ window.bribePolice = function() {
     } else alert("Uang tidak cukup!");
 };
 
-// EVENT ACAK DENGAN 10 JENIS & BLOKIR LAYAR SIDAK POLISI (Revisi #3, #6, #7)
+// EVENT ACAK DENGAN 10 JENIS
 function scheduleNextRandomEvent() {
     const randomMs = (Math.floor(Math.random() * 120) + 60) * 1000;
     setTimeout(() => {
@@ -948,9 +980,8 @@ function handleEventAction(act) {
             gameState.money = Math.max(0, gameState.money - 10000000);
             break;
         case 'close_business':
-            // Revisi #7: Tutup Bisnis Sementara, layar terkunci tidak bisa diklik (disimulasikan dengan timer state)
-            gameState.isBusinessClosedTimer = 120; // 2 menit
-            logMessage("Bisnis ditutup sementara untuk menghindari razia. Layar dikunci!", 'danger');
+            gameState.isBusinessClosedTimer = 120;
+            logMessage("Bisnis ditutup sementara untuk menghindari razia.", 'danger');
             alert("Operasi bisnis ditutup sementara selama 2 menit untuk menghindari razia kepolisian!");
             break;
         case 'ignore_heat':
@@ -961,7 +992,6 @@ function handleEventAction(act) {
             logMessage("Bisnis yang disabotase AI berhasil diperbaiki.", 'success');
             break;
         case 'sabotage_destroy':
-            // Revisi #3: Kemungkinan bisnis hancur disabotase AI
             const bizKeys = Object.keys(gameState.businesses);
             if (bizKeys.length > 0) {
                 const targetBiz = bizKeys[0];
@@ -976,7 +1006,7 @@ function handleEventAction(act) {
     updateUI();
 }
 
-// PANDUAN MODAL (Revisi #8)
+// PANDUAN MODAL
 window.toggleGuideModal = function(show) {
     const m = document.getElementById('guide-modal');
     if (show) m.classList.remove('hidden');
