@@ -9,15 +9,15 @@
 </head>
 <body>
 
-    <!-- Modal Login / Register -->
+<!-- Modal Login / Register -->
     <div id="auth-modal" class="modal-overlay">
-        <div class="modal-card">
+        <div class="modal-card" style="position: relative; z-index: 1001;">
             <h2 class="gold-text">KARTEL MAFIA INDONESIA</h2>
             <p class="subtitle">MMO Strategi Dunia Hitam</p>
             
             <div class="auth-tabs">
-                <button id="tab-login-btn" class="active" onclick="switchAuthTab('login')">Masuk</button>
-                <button id="tab-register-btn" onclick="switchAuthTab('register')">Daftar Baru</button>
+                <button type="button" id="tab-login-btn" class="active" onclick="switchAuthTab('login')">Masuk</button>
+                <button type="button" id="tab-register-btn" onclick="switchAuthTab('register')">Daftar Baru</button>
             </div>
 
             <form id="auth-form" onsubmit="handleAuthSubmit(event)">
