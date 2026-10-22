@@ -117,7 +117,6 @@ export async function fetchLeaderboardData() {
     }
 }
 
-// SIMPAN & DUMP GLOBAL PILKADA
 export async function fetchGlobalPilkadaData() {
     try {
         const snap = await getDoc(doc(db, "meta", "pilkada"));
