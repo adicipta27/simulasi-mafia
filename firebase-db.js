@@ -88,7 +88,6 @@ export async function saveUserDataToCloud(uid, gameState) {
     }
 }
 
-// LEADERBOARD (Revisi #2: Tanpa Mengirim Power)
 export async function fetchLeaderboardData() {
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -107,7 +106,6 @@ export async function fetchLeaderboardData() {
             }
         });
 
-        // Urutkan berdasarkan Jumlah Kota Terkuasai -> Uang Kas
         players.sort((a, b) => {
             if (b.cities !== a.cities) return b.cities - a.cities;
             return b.money - a.money;
