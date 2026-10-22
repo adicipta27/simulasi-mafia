@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <!-- Overlay Kunci Layar (Sidak Polisi / Tutup Bisnis) - Revisi #5 -->
+    <!-- Overlay Kunci Layar (Sidak Polisi / Tutup Bisnis) -->
     <div id="lockdown-overlay" class="modal-overlay hidden" style="z-index: 20000; background: rgba(0, 0, 0, 0.95); cursor: not-allowed;">
         <div class="modal-card border-red" style="pointer-events: none;">
             <h2 class="text-red">🚨 OPERASI BISNIS DITUTUP SEMENTARA 🚨</h2>
@@ -64,7 +64,7 @@
         </div>
     </div>
 
-    <!-- Modal Event Acak (20 Detik Countdown) -->
+    <!-- Modal Event Acak -->
     <div id="event-modal" class="modal-overlay hidden">
         <div class="modal-card event-card">
             <div class="event-img-banner">🚨</div>
@@ -97,13 +97,13 @@
             <h2 class="gold-text">PANDUAN LENGKAP KARTEL MAFIA</h2>
             <div class="guide-content">
                 <h4>1. Basis Multiplayer & Peta</h4>
-                <p>Setiap kota awal unik. Kota yang diklaim pemain lain harus diserang untuk direbut. Kota ekspansi bisa berpindah tangan antar pemain.</p>
+                <p>Setiap kota awal unik. Kota yang diklaim pemain lain bisa diserang. Jika menang, Anda menjarah kas lawan dan merebut wilayahnya.</p>
                 <h4>2. Aksi Kriminal (Umum & Spesial)</h4>
                 <p>Menghasilkan uang dalam rentang (range) acak. Kriminal spesial membutuhkan Perwira Unik tertentu agar bisa dibuka.</p>
                 <h4>3. Bisnis Haram & Sabotase</h4>
                 <p>Bisnis menghasilkan kas per 1 menit, namun memiliki risiko disabotase oleh mafia AI dari event acak.</p>
-                <h4>4. Ekspedisi & Tahanan Anak Buah</h4>
-                <p>Dibatasi maksimal 2x sehari (reset jam 00:00 WIB). Anak buah yang ditangkap polisi dapat dibebaskan melalui panel asisten.</p>
+                <h4>4. Leaderboard & Proteksi</h4>
+                <p>Bersaing peringkat tertinggi di Leaderboard. Pemain yang kotanya direbut akan mendapatkan Peace Shield otomatis selama 12 jam.</p>
             </div>
             <button class="btn btn-gold full-btn" onclick="toggleGuideModal(false)">TUTUP PANDUAN</button>
         </div>
@@ -164,6 +164,7 @@
         <!-- Dynamic Navigation Tabs -->
         <nav class="nav-tabs">
             <button class="nav-btn active" onclick="switchTab('turf-tab')">🗺️ Peta MMO</button>
+            <button class="nav-btn" onclick="switchTab('leaderboard-tab')">🏆 Leaderboard</button>
             <button class="nav-btn" onclick="switchTab('crimes-tab')">🔪 Aksi Kriminal</button>
             <button class="nav-btn" onclick="switchTab('business-tab')">🏢 Bisnis Haram</button>
             <button class="nav-btn" onclick="switchTab('rivals-tab')">⚔️ Pasukan</button>
@@ -180,7 +181,7 @@
             <section id="turf-tab" class="tab-content active">
                 <div class="turf-header">
                     <h3>PETA DOMINASI KARTEL INDONESIA</h3>
-                    <p>Serang kota pemain lain atau taklukkan wilayah AI untuk memperluas imperium!</p>
+                    <p>Serang kota pemain lain untuk merebut wilayah dan menjarah uang kas mereka!</p>
                     <div class="province-selector-bar">
                         <label>Pilih Provinsi: </label>
                         <select id="province-view-select" onchange="renderTurfMap()"></select>
@@ -191,7 +192,29 @@
                 </div>
             </section>
 
-            <!-- TAB 2: AKSI KRIMINAL -->
+            <!-- TAB 2: LEADERBOARD (Revisi #1) -->
+            <section id="leaderboard-tab" class="tab-content">
+                <h3>🏆 PAPAN PERINGKAT KARTEL INDONESIA</h3>
+                <p>Peringkat bos mafia terkuat berdasarkan Power Tempur, Wilayah, dan Total Kekayaan Kas!</p>
+                <div class="leaderboard-table-container">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Nama Bos / Kartel</th>
+                                <th>Power Tempur</th>
+                                <th>Kota Terkuasai</th>
+                                <th>Kas Sindikat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <tr><td colspan="5" style="text-align:center;">Memuat data peringkat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 3: AKSI KRIMINAL -->
             <section id="crimes-tab" class="tab-content">
                 <h3>AKSI KRIMINAL (6 UMUM & SPESIAL)</h3>
                 <p>Hasil kejahatan bervariasi dalam rentang range acak. Kriminal spesial membutuhkan Perwira Unik.</p>
@@ -203,14 +226,14 @@
                 <div class="card-grid" id="crimes-list"></div>
             </section>
 
-            <!-- TAB 3: BISNIS HARAM -->
+            <!-- TAB 4: BISNIS HARAM -->
             <section id="business-tab" class="tab-content">
                 <h3>BISNIS HARAM & ASET</h3>
                 <p>Menghasilkan kas tiap menit. Waspada terhadap sabotase AI dari event acak!</p>
                 <div class="card-grid" id="business-list"></div>
             </section>
 
-            <!-- TAB 4: PASUKAN -->
+            <!-- TAB 5: PASUKAN -->
             <section id="rivals-tab" class="tab-content">
                 <h3>MANAJEMEN PASUKAN & SENJATA</h3>
                 <div class="recruitment-banner">
@@ -224,14 +247,14 @@
                 <div id="members-list-grid" class="card-grid"></div>
             </section>
 
-            <!-- TAB 5: PERWIRA UNIK -->
+            <!-- TAB 6: PERWIRA UNIK -->
             <section id="officers-tab" class="tab-content">
                 <h3>PERWIRA UNIK & UNDERBOSS</h3>
                 <p>Membuka kunci aksi kriminal spesial dan memberikan buff pasif.</p>
                 <div class="card-grid" id="officers-list"></div>
             </section>
 
-            <!-- TAB 6: EKSPEDISI -->
+            <!-- TAB 7: EKSPEDISI -->
             <section id="expedition-tab" class="tab-content">
                 <h3>EKSPEDISI PENYELUNDUPAN (MAKS 2X / HARI)</h3>
                 <p>1-3 Pilihan ekspedisi muncul secara acak beserta batas waktu pendaftaran! Reset jam 00:00 WIB.</p>
@@ -241,14 +264,14 @@
                 <div id="active-expeditions-list" class="card-grid"></div>
             </section>
 
-            <!-- TAB 7: EKSPANSI INTERNASIONAL -->
+            <!-- TAB 8: EKSPANSI INTERNASIONAL -->
             <section id="global-tab" class="tab-content">
                 <h3>EKSPANSI KARTEL DUNIA</h3>
                 <p id="global-status-desc" style="font-weight:700;">Kuasai 100% wilayah AI di Indonesia terlebih dahulu!</p>
                 <div class="card-grid" id="global-targets-list"></div>
             </section>
 
-            <!-- TAB 8: SUAP & ORMAS -->
+            <!-- TAB 9: SUAP & ORMAS -->
             <section id="social-tab" class="tab-content">
                 <h3>PENGARUH SOSIAL & SUAP</h3>
                 <div class="loan-container">
@@ -270,7 +293,7 @@
             <div class="assistant-avatar">💼</div>
             <div class="assistant-speech">
                 <h4 id="assistant-name">Bambang - Asisten Keamanan</h4>
-                <p id="assistant-message">"Laporan siap, Boss. Pantau keamanan wilayah secara berkala."</p>
+                <p id="assistant-message">"Laporan siap, Boss. Pantau pertahanan wilayah dari serangan pemain lain."</p>
             </div>
             <div style="margin-left:auto; text-align:right;">
                 <small class="text-muted">Anak Buah Ditahan:</small>
