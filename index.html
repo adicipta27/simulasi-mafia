@@ -102,8 +102,8 @@
                 <p>Menghasilkan uang dalam rentang (range) acak. Kriminal spesial membutuhkan Perwira Unik tertentu agar bisa dibuka.</p>
                 <h4>3. Bisnis Haram & Sabotase</h4>
                 <p>Bisnis menghasilkan kas per 1 menit, namun memiliki risiko disabotase oleh mafia AI dari event acak.</p>
-                <h4>4. Leaderboard & Proteksi</h4>
-                <p>Bersaing peringkat tertinggi di Leaderboard. Pemain yang kotanya direbut akan mendapatkan Peace Shield otomatis selama 12 jam.</p>
+                <h4>4. Leaderboard & Sync Log</h4>
+                <p>Bersaing di Leaderboard berdasarkan Wilayah & Kas. Log aktivitas Anda tersimpan di cloud Firebase secara otomatis saat Anda berganti HP atau PC!</p>
             </div>
             <button class="btn btn-gold full-btn" onclick="toggleGuideModal(false)">TUTUP PANDUAN</button>
         </div>
@@ -192,23 +192,22 @@
                 </div>
             </section>
 
-            <!-- TAB 2: LEADERBOARD (Revisi #1) -->
+            <!-- TAB 2: LEADERBOARD (Revisi #2: Hapus Power Tempur) -->
             <section id="leaderboard-tab" class="tab-content">
                 <h3>🏆 PAPAN PERINGKAT KARTEL INDONESIA</h3>
-                <p>Peringkat bos mafia terkuat berdasarkan Power Tempur, Wilayah, dan Total Kekayaan Kas!</p>
+                <p>Peringkat bos mafia terkuat berdasarkan Jumlah Wilayah Terkuasai dan Total Kekayaan Kas!</p>
                 <div class="leaderboard-table-container">
                     <table class="leaderboard-table">
                         <thead>
                             <tr>
                                 <th>Rank</th>
                                 <th>Nama Bos / Kartel</th>
-                                <th>Power Tempur</th>
                                 <th>Kota Terkuasai</th>
                                 <th>Kas Sindikat</th>
                             </tr>
                         </thead>
                         <tbody id="leaderboard-body">
-                            <tr><td colspan="5" style="text-align:center;">Memuat data peringkat...</td></tr>
+                            <tr><td colspan="4" style="text-align:center;">Memuat data peringkat...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -302,7 +301,7 @@
         </div>
 
         <footer class="log-footer">
-            <div class="log-title">CATATAN OPERASIONAL SINDIKAT</div>
+            <div class="log-title">CATATAN OPERASIONAL SINDIKAT (TERSIMPAN DI CLOUD)</div>
             <div id="game-logs" class="logs-body"></div>
         </footer>
     </div>
