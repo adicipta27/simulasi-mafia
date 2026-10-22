@@ -84,7 +84,7 @@ body { background-color: var(--bg-dark); color: var(--text-light); min-height: 1
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* LEADERBOARD TABLE (Revisi #1) */
+/* LEADERBOARD TABLE */
 .leaderboard-table-container {
     background: #090a0d; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-top: 15px; overflow-x: auto;
 }
@@ -124,7 +124,7 @@ body { background-color: var(--bg-dark); color: var(--text-light); min-height: 1
 
 .log-footer { background: #07080a; border-top: 1px solid var(--border-color); padding: 12px 20px; }
 .log-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-bottom: 5px; }
-.logs-body { height: 80px; overflow-y: auto; font-size: 0.85rem; display: flex; flex-direction: column-reverse; gap: 4px; }
+.logs-body { height: 80px; overflow-y: auto; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
 .log-entry { font-family: monospace; color: #a0aab8; }
 .log-entry.success { color: var(--green); }
 .log-entry.danger { color: var(--red); }
