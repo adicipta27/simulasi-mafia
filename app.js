@@ -63,8 +63,13 @@ let currentActiveEvent = null;
 let eventTimerSec = 20;
 let globalOccupiedMap = {};
 
-// INITIALIZATION
+// INITIALIZATION (Fix Modal Login Tampil Pertama Kali)
 window.addEventListener('DOMContentLoaded', () => {
+    // Pastikan modal login ditampilkan secara eksplisit saat halaman pertama di-load
+    document.getElementById('auth-modal').classList.remove('hidden');
+    document.getElementById('game-container').classList.add('hidden');
+    document.getElementById('setup-modal').classList.add('hidden');
+
     setupAuthListeners();
     populateSetupSelects();
 
@@ -101,7 +106,7 @@ function setupAuthListeners() {
         } else {
             currentUser = null;
             gameState = createDefaultGameState();
-            document.getElementById('auth-modal').classList.add('hidden');
+            document.getElementById('auth-modal').classList.remove('hidden');
             document.getElementById('game-container').classList.add('hidden');
             document.getElementById('setup-modal').classList.add('hidden');
         }
@@ -112,7 +117,7 @@ window.switchAuthTab = function(mode) {
     currentAuthMode = mode;
     document.getElementById('tab-login-btn').className = mode === 'login' ? 'active' : '';
     document.getElementById('tab-register-btn').className = mode === 'register' ? 'active' : '';
-    document.getElementById('auth-submit-btn').innerText = mode === 'login' ? 'MASUK' : 'DAFTAR';
+    document.getElementById('auth-submit-btn').innerText = mode === 'login' ? 'MASUK KE DUNIA HITAM' : 'DAFTAR KARTEL BARU';
 };
 
 window.handleAuthSubmit = async function(e) {
@@ -361,7 +366,6 @@ window.switchTab = function(tabId) {
     if (tabId === 'leaderboard-tab') renderLeaderboard();
 };
 
-// RENDERING LEADERBOARD (Revisi #2: Hapus Power Tempur)
 async function renderLeaderboard() {
     const tbody = document.getElementById('leaderboard-body');
     if (!tbody) return;
@@ -1049,7 +1053,7 @@ window.bribePolice = function() {
     } else alert("Uang tidak cukup!");
 };
 
-// EVENT ACAK - PEMERIKSAAN & REVISI LOGIKA (Revisi #3)
+// EVENT ACAK
 function scheduleNextRandomEvent() {
     const randomMs = (Math.floor(Math.random() * 120) + 60) * 1000;
     setTimeout(() => {
@@ -1260,7 +1264,7 @@ window.resetGameProgress = async function() {
 
 function getProvinceObj(pId) { return PROVINCES.find(p => p.id === pId); }
 
-// LOGITAS OPERASIONAL DENGAN SYNC CLOUD (Revisi #1)
+// LOGITAS OPERASIONAL DENGAN SYNC CLOUD
 function logMessage(msg, type = '') {
     if (!currentUser) return;
     if (!gameState.gameLogs) gameState.gameLogs = [];
@@ -1278,7 +1282,7 @@ function logMessage(msg, type = '') {
     }
 
     renderLogs();
-    cloudAutosaveInterval(); // Simpan otomatis ke cloud Firestore
+    cloudAutosaveInterval();
 }
 
 function renderLogs() {
