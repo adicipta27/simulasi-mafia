@@ -116,3 +116,23 @@ export async function fetchLeaderboardData() {
         return [];
     }
 }
+
+// SIMPAN & DUMP GLOBAL PILKADA
+export async function fetchGlobalPilkadaData() {
+    try {
+        const snap = await getDoc(doc(db, "meta", "pilkada"));
+        if (snap.exists()) return snap.data();
+        return null;
+    } catch (err) {
+        console.error("Fetch pilkada error:", err);
+        return null;
+    }
+}
+
+export async function saveGlobalPilkadaData(pilkadaState) {
+    try {
+        await setDoc(doc(db, "meta", "pilkada"), pilkadaState, { merge: true });
+    } catch (err) {
+        console.error("Save pilkada error:", err);
+    }
+}
