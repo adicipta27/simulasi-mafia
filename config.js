@@ -15,16 +15,20 @@ export const GLOBAL_TARGETS = [
 
 export const RIVAL_NAMES = ['Geng Banteng Merah', 'Kartel Batavia', 'Ormas Pesisir', 'Mafia Port', 'Sindikat Hitam', 'Geng Kampung Atas'];
 
-// KRIMINAL UMUM & SPESIAL DENGAN RANGE HASIL (Revisi #2)
+// 6 KRIMINAL UMUM + 3 KRIMINAL SPESIAL (Revisi #10)
 export const CRIMES_DATA = [
+    // 6 Aksi Kriminal Umum
     { id: 'parkir_liar', type: 'umum', name: 'Pungli Parkir Liar', durationSec: 5, minMembers: 1, minPower: 0, minReward: 300000, maxReward: 700000, heat: 2 },
     { id: 'peras_pasar', type: 'umum', name: 'Peras Pedagang Pasar', durationSec: 10, minMembers: 2, minPower: 20, minReward: 1200000, maxReward: 2500000, heat: 5 },
     { id: 'begal', type: 'umum', name: 'Begal Motor Malam', durationSec: 15, minMembers: 3, minPower: 50, minReward: 4000000, maxReward: 8000000, heat: 8 },
-    
-    // Spesial (Membutuhkan Perwira Unik)
-    { id: 'pencucian_offshore', type: 'spesial', reqOfficer: 'bambang_lintah', name: 'Pencucian Dana Offshore', durationSec: 25, minMembers: 5, minPower: 120, minReward: 15000000, maxReward: 25000000, heat: 12 },
-    { id: 'suap_tender', type: 'spesial', reqOfficer: 'akbp_hendro', name: 'Penggelapan Tender Proyek Negara', durationSec: 40, minMembers: 8, minPower: 300, minReward: 50000000, maxReward: 80000000, heat: 18 },
-    { id: 'sindikat_internasional', type: 'spesial', reqOfficer: 'siti_mawar', name: 'Sindikat Penyelundupan Senjata Gelap', durationSec: 60, minMembers: 12, minPower: 600, minReward: 140000000, maxReward: 220000000, heat: 25 }
+    { id: 'debt_collector', type: 'umum', name: 'Jasa Penagihan Rentenir Gelap', durationSec: 20, minMembers: 4, minPower: 90, minReward: 8000000, maxReward: 14000000, heat: 10 },
+    { id: 'judi_togel', type: 'umum', name: 'Markas Judi Togel Online', durationSec: 30, minMembers: 6, minPower: 160, minReward: 18000000, maxReward: 30000000, heat: 14 },
+    { id: 'rampok_toko_emas', type: 'umum', name: 'Perampokan Toko Emas Daerah', durationSec: 45, minMembers: 8, minPower: 280, minReward: 45000000, maxReward: 75000000, heat: 20 },
+
+    // Aksi Kriminal Spesial (Butuh Perwira Unik)
+    { id: 'pencucian_offshore', type: 'spesial', reqOfficer: 'bambang_lintah', name: 'Pencucian Dana Offshore', durationSec: 30, minMembers: 5, minPower: 120, minReward: 25000000, maxReward: 45000000, heat: 12 },
+    { id: 'suap_tender', type: 'spesial', reqOfficer: 'akbp_hendro', name: 'Penggelapan Tender Proyek Negara', durationSec: 45, minMembers: 8, minPower: 300, minReward: 80000000, maxReward: 130000000, heat: 18 },
+    { id: 'sindikat_internasional', type: 'spesial', reqOfficer: 'siti_mawar', name: 'Sindikat Penyelundupan Senjata Gelap', durationSec: 60, minMembers: 12, minPower: 600, minReward: 200000000, maxReward: 350000000, heat: 25 }
 ];
 
 export const BUSINESS_DATA = [
@@ -54,16 +58,16 @@ export const OFFICERS_MASTER = [
     { id: 'siti_mawar', name: 'Siti Mawar', title: 'Penyelundup Handal', cost: 150000000, desc: 'Risiko ekspedisi turun 15% & buka Kriminal Spesial Senjata.' }
 ];
 
-// 10 JENIS EVENT ACAK LENGKAP (Revisi #6)
+// 10 EVENT ACAK DENGAN REVISI KELAYAKAN OPSI (Revisi #8 & #9)
 export const EVENTS_MASTER = [
     { id: 'ev_1', title: "SERANGAN GENG RIVAL", desc: "Geng musuh menyerang markas Anda!", choices: [{ text: "Lawan (Min 150 PWR)", act: 'fight_rival' }, { text: "Bayar Damai (Rp 10 Juta)", act: 'pay_peace' }] },
     { id: 'ev_2', title: "SIDAK POLDA KETAT", desc: "Razia besar-besaran di wilayah operasi.", choices: [{ text: "Tutup Bisnis Sementara (Durasi 2m)", act: 'close_business' }, { text: "Abaikan (+15% Heat)", act: 'ignore_heat' }] },
-    { id: 'ev_3', title: "SABOTASE BISNIS HARAM", desc: "Mafia AI menyabotase salah satu bisnis Anda!", choices: [{ text: "Perbaiki Kerusakan (Rp 15 Juta)", act: 'sabotage_fix' }, { text: "Biarkan Hancur", act: 'sabotage_destroy' }] },
+    { id: 'ev_3', title: "SABOTASE BISNIS HARAM", desc: "Mafia AI menyabotase salah satu bisnis Anda!", choices: [{ text: "Perbaiki Kerusakan (Rp 15 Juta)", act: 'sabotage_fix' }, { text: "Biarkan Hancur / Potong Uang", act: 'sabotage_destroy' }] },
     { id: 'ev_4', title: "PENGKHIANATAN ANAK BUAH", desc: "Informan membocorkan lokasi kas.", choices: [{ text: "Selesaikan Diam-Diam (Rp 8 Juta)", act: 'trait_pay' }, { text: "Kejar & Eksekusi", act: 'trait_kill' }] },
     { id: 'ev_5', title: "PEMERASAN WARTAWAN", desc: "Media mengancam ekspos kejahatan.", choices: [{ text: "Suap Wartawan (Rp 12 Juta)", act: 'media_bribe' }, { text: "Teror Balik (+20% Heat)", act: 'media_terror' }] },
     { id: 'ev_6', title: "PENYELUNDUPAN SENJATA GELAP", desc: "Kontak militer menawarkan senjata murah.", choices: [{ text: "Beli Borongan (+50 PWR, Rp 20 Juta)", act: 'buy_blackmarket' }, { text: "Tolak Tawaran", act: 'ignore' }] },
     { id: 'ev_7', title: "BAKTI SOSIAL DADAKAN", desc: "Warga demo menuntut sumbangan.", choices: [{ text: "Bagi Sembako (-10% Heat, Rp 10 Juta)", act: 'social_aid' }, { text: "Bubarkan Paksa", act: 'dispers_crowd' }] },
-    { id: 'ev_8', title: "OPERASI TANGKAP TANGAN", desc: "KPK mengincar transaksi suap Anda.", choices: [{ text: "Musnahkan Dokumen (Rp 25 Juta)", act: 'destroy_docs' }, { text: "Sogok Penyidik (Rp 50 Juta)", act: 'bribe_kpk' }] },
+    { id: 'ev_8', title: "OPERASI TANGKAP TANGAN (OTT)", desc: "KPK melakukan penyadapan transaksi suap Anda.", choices: [{ text: "Musnahkan Dokumen Rahasia (Heat -20%, Biaya Kurir Rp 10 Juta)", act: 'ott_destroy' }, { text: "Sogok Penyidik KPK (Rp 50 Juta -> Heat 0%)", act: 'ott_bribe' }] },
     { id: 'ev_9', title: "PERGESERAN DAERAH KEKUASAAN", desc: "Ormas lokal mengajak bagi hasil wilayah.", choices: [{ text: "Terima Aliansi (+Rp 30 Juta)", act: 'alliance_yes' }, { text: "Tolak & Perangi", act: 'alliance_no' }] },
     { id: 'ev_10', title: "BOS BESAR KEMBALI", desc: "Mentor lama memberikan suntikan modal.", choices: [{ text: "Terima Modal (+Rp 100 Juta)", act: 'mentor_money' }, { text: "Tolak Bantuan", act: 'ignore' }] }
 ];
