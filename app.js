@@ -50,7 +50,8 @@ function createDefaultGameState() {
         expeditionCountToday: 0,
         lastExpeditionDate: '',
         peaceShieldUntil: 0,
-        isBusinessClosedTimer: 0
+        isBusinessClosedTimer: 0,
+        gameLogs: [] // Penyimpanan log operasional
     };
 }
 
@@ -95,11 +96,12 @@ function setupAuthListeners() {
                 document.getElementById('setup-modal').classList.add('hidden');
                 document.getElementById('game-container').classList.remove('hidden');
                 initUI();
+                renderLogs(); // Muat log tersimpan
             }
         } else {
             currentUser = null;
             gameState = createDefaultGameState();
-            document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('auth-modal').classList.add('hidden');
             document.getElementById('game-container').classList.add('hidden');
             document.getElementById('setup-modal').classList.add('hidden');
         }
@@ -213,6 +215,7 @@ window.submitInitialSetup = async function() {
 
     await cloudAutosaveInterval();
     initUI();
+    renderLogs();
     setAssistantMessage(`Basecamp didirikan di ${cName}. Selamat berjuang, Boss!`);
 };
 
@@ -310,8 +313,10 @@ function initUI() {
     updateUI();
 }
 
-function updateUI() {
+async function updateUI() {
     if (!gameState.setupDone) return;
+
+    globalOccupiedMap = await fetchGlobalOccupiedCities();
 
     document.getElementById('user-display-name').innerText = gameState.username;
     document.getElementById('player-location-badge').innerText = `Basecamp: ${gameState.homeCity}`;
@@ -357,7 +362,6 @@ window.switchTab = function(tabId) {
     if (tabId === 'leaderboard-tab') renderLeaderboard();
 };
 
-// RENDERING LEADERBOARD (Revisi #1)
 async function renderLeaderboard() {
     const tbody = document.getElementById('leaderboard-body');
     if (!tbody) return;
@@ -384,7 +388,7 @@ async function renderLeaderboard() {
     });
 }
 
-// PETA WILAYAH & SERANGAN REAL-TIME PVP (Revisi #2)
+// PETA WILAYAH & PERANG PVP (Revisi Sinkronisasi Rebut Balik)
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -426,7 +430,7 @@ function renderTurfMap() {
             <h4>${cityName}</h4>
             <p style="font-size:0.85rem;">Status: <strong>${statusText}</strong></p>
             ${isControlled ? '<span class="text-green">✔ Wilayah Aman</span>' :
-              occupant && occupant.uid !== currentUser.uid ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="attackPlayerCity('${cityName}')">Serang & Penjarakan Pemain</button>` :
+              occupant && occupant.uid !== currentUser.uid ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="attackPlayerCity('${cityName}')">Serang & Rebut Kembali</button>` :
               `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="reclaimCity('${cityName}')">Serang & Rebut</button>`}
         `;
         grid.appendChild(card);
@@ -451,48 +455,38 @@ window.reclaimCity = function(cityName) {
     updateUI();
 };
 
-// SERANGAN SANGAT BERDAMPAK KE DUA PEMAIN (Revisi #2)
 window.attackPlayerCity = async function(cityName) {
     const occupant = globalOccupiedMap[cityName];
     if (!occupant) return;
 
     const myPwr = getPlayerTotalPower();
-    
-    // Ambil data real-time pemain target dari Cloud Firestore
     const targetCloudData = await loadUserDataFromCloud(occupant.uid);
-    let targetPwr = 200; // Default jika target belum ter-update
+    let targetPwr = 200; 
     if (targetCloudData) {
         targetPwr = (targetCloudData.weapons || 0) * 25;
         (targetCloudData.members || []).forEach(m => targetPwr += m.power);
     }
 
-    // Cek Peace Shield target
     if (targetCloudData && targetCloudData.peaceShieldUntil && Date.now() < targetCloudData.peaceShieldUntil) {
-        alert(`Kota ${cityName} sedang dilindungi Peace Shield (Perlindungan Korban)! Tidak bisa diserang.`);
+        alert(`Kota ${cityName} sedang dilindungi Peace Shield! Tidak bisa diserang.`);
         return;
     }
 
     if (myPwr > targetPwr) {
-        // 1. DAMPAK BAGI PENYERANG (Pemain A)
         gameState.controlledCities[cityName] = true;
         
-        // Menjarah kas lawan (10% dari kas target, maks Rp 50 Juta)
         let lootedCash = 15000000;
         if (targetCloudData && targetCloudData.money) {
             lootedCash = Math.min(50000000, Math.floor(targetCloudData.money * 0.10));
         }
         gameState.money += lootedCash;
 
-        // Update klaim kepemilikan kota di Database Global Firestore
         await updateCityOccupantGlobal(cityName, currentUser.uid, gameState.username);
 
-        // 2. DAMPAK BAGI KORBAN (Pemain B)
         if (targetCloudData) {
-            delete targetCloudData.controlledCities[cityName]; // Kota lepas dari Pemain B
-            targetCloudData.money = Math.max(0, targetCloudData.money - lootedCash); // Kas Pemain B terpotong
-            targetCloudData.peaceShieldUntil = Date.now() + (12 * 60 * 60 * 1000); // Beri Peace Shield 12 jam
-            
-            // Simpan perubahan langsung ke Firestore Pemain B
+            delete targetCloudData.controlledCities[cityName]; 
+            targetCloudData.money = Math.max(0, targetCloudData.money - lootedCash); 
+            targetCloudData.peaceShieldUntil = Date.now() + (12 * 60 * 60 * 1000); 
             await saveUserDataToCloud(occupant.uid, targetCloudData);
         }
 
@@ -643,7 +637,6 @@ window.buyBusiness = function(bId) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// REKRUT & PECAT PASUKAN
 window.buyMember = function() {
     const cost = 2500000;
     if (gameState.money >= cost) {
@@ -702,7 +695,6 @@ function removeRandomMembers(min, max) {
     for (let i = 0; i < count; i++) gameState.members.pop();
 }
 
-// PERWIRA UNIK
 function renderOfficers() {
     const container = document.getElementById('officers-list');
     if (!container) return;
@@ -739,7 +731,6 @@ window.hireOfficer = function(oId) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// PENJARA
 function triggerPlayerJail() {
     gameState.isJailed = true;
     gameState.jailTimerSec = Math.floor(Math.random() * 40) + 20;
@@ -1041,7 +1032,6 @@ window.conquerGlobal = function(gId) {
     updateUI();
 };
 
-// DONASI ORMAS & SUAP
 window.donateOrmas = function() {
     if (gameState.money >= 15000000) {
         gameState.money -= 15000000;
@@ -1060,7 +1050,6 @@ window.bribePolice = function() {
     } else alert("Uang tidak cukup!");
 };
 
-// EVENT ACAK
 function scheduleNextRandomEvent() {
     const randomMs = (Math.floor(Math.random() * 120) + 60) * 1000;
     setTimeout(() => {
@@ -1179,7 +1168,6 @@ function handleEventAction(act, choiceText = '') {
     updateUI();
 }
 
-// PANDUAN MODAL
 window.toggleGuideModal = function(show) {
     const m = document.getElementById('guide-modal');
     if (show) m.classList.remove('hidden');
@@ -1190,23 +1178,59 @@ window.resetGameProgress = async function() {
     if (!confirm("Reset total progress?")) return;
     gameState = createDefaultGameState();
     payoutCountdownSec = 60;
+    localStorage.removeItem(`mafia_logs_${currentUser?.uid}`);
     await cloudAutosaveInterval();
     location.reload();
 };
 
 function getProvinceObj(pId) { return PROVINCES.find(p => p.id === pId); }
-function hashCode(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    return hash;
+
+// SISTEM CATATAN OPERASIONAL PERMANEN & MAKSIMAL 5 LOG (Revisi #1)
+function logMessage(msg, type = '') {
+    if (!currentUser) return;
+    if (!gameState.gameLogs) gameState.gameLogs = [];
+
+    const newLog = {
+        time: new Date().toLocaleTimeString(),
+        msg: msg,
+        type: type
+    };
+
+    // Tambahkan ke urutan paling atas
+    gameState.gameLogs.unshift(newLog);
+
+    // Batasi maksimal hanya 5 log terbaru
+    if (gameState.gameLogs.length > 5) {
+        gameState.gameLogs = gameState.gameLogs.slice(0, 5);
+    }
+
+    // Simpan ke localStorage browser agar tidak hilang saat refresh
+    localStorage.setItem(`mafia_logs_${currentUser.uid}`, JSON.stringify(gameState.gameLogs));
+
+    renderLogs();
 }
 
-function logMessage(msg, type = '') {
-    const logs = document.getElementById('game-logs');
-    if (!logs) return;
-    const entry = document.createElement('div');
-    entry.className = `log-entry ${type}`;
-    entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    logs.appendChild(entry);
-    logs.scrollTop = logs.scrollHeight;
+function renderLogs() {
+    if (!currentUser) return;
+    const logsContainer = document.getElementById('game-logs');
+    if (!logsContainer) return;
+
+    // Ambil dari localStorage jika ada
+    const savedLogs = localStorage.getItem(`mafia_logs_${currentUser.uid}`);
+    if (savedLogs) {
+        gameState.gameLogs = JSON.parse(savedLogs);
+    }
+
+    logsContainer.innerHTML = '';
+    if (!gameState.gameLogs || gameState.gameLogs.length === 0) {
+        logsContainer.innerHTML = '<div class="log-entry">Belum ada catatan operasional.</div>';
+        return;
+    }
+
+    gameState.gameLogs.forEach(log => {
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${log.type}`;
+        entry.innerText = `[${log.time}] ${log.msg}`;
+        logsContainer.appendChild(entry);
+    });
 }
