@@ -15,9 +15,7 @@ export const GLOBAL_TARGETS = [
 
 export const RIVAL_NAMES = ['Geng Banteng Merah', 'Kartel Batavia', 'Ormas Pesisir', 'Mafia Port', 'Sindikat Hitam', 'Geng Kampung Atas'];
 
-// 6 KRIMINAL UMUM + 3 KRIMINAL SPESIAL (Revisi #10)
 export const CRIMES_DATA = [
-    // 6 Aksi Kriminal Umum
     { id: 'parkir_liar', type: 'umum', name: 'Pungli Parkir Liar', durationSec: 5, minMembers: 1, minPower: 0, minReward: 300000, maxReward: 700000, heat: 2 },
     { id: 'peras_pasar', type: 'umum', name: 'Peras Pedagang Pasar', durationSec: 10, minMembers: 2, minPower: 20, minReward: 1200000, maxReward: 2500000, heat: 5 },
     { id: 'begal', type: 'umum', name: 'Begal Motor Malam', durationSec: 15, minMembers: 3, minPower: 50, minReward: 4000000, maxReward: 8000000, heat: 8 },
@@ -25,7 +23,6 @@ export const CRIMES_DATA = [
     { id: 'judi_togel', type: 'umum', name: 'Markas Judi Togel Online', durationSec: 30, minMembers: 6, minPower: 160, minReward: 18000000, maxReward: 30000000, heat: 14 },
     { id: 'rampok_toko_emas', type: 'umum', name: 'Perampokan Toko Emas Daerah', durationSec: 45, minMembers: 8, minPower: 280, minReward: 45000000, maxReward: 75000000, heat: 20 },
 
-    // Aksi Kriminal Spesial (Butuh Perwira Unik)
     { id: 'pencucian_offshore', type: 'spesial', reqOfficer: 'bambang_lintah', name: 'Pencucian Dana Offshore', durationSec: 30, minMembers: 5, minPower: 120, minReward: 25000000, maxReward: 45000000, heat: 12 },
     { id: 'suap_tender', type: 'spesial', reqOfficer: 'akbp_hendro', name: 'Penggelapan Tender Proyek Negara', durationSec: 45, minMembers: 8, minPower: 300, minReward: 80000000, maxReward: 130000000, heat: 18 },
     { id: 'sindikat_internasional', type: 'spesial', reqOfficer: 'siti_mawar', name: 'Sindikat Penyelundupan Senjata Gelap', durationSec: 60, minMembers: 12, minPower: 600, minReward: 200000000, maxReward: 350000000, heat: 25 }
@@ -58,7 +55,6 @@ export const OFFICERS_MASTER = [
     { id: 'siti_mawar', name: 'Siti Mawar', title: 'Penyelundup Handal', cost: 150000000, desc: 'Risiko ekspedisi turun 15% & buka Kriminal Spesial Senjata.' }
 ];
 
-// 10 EVENT ACAK DENGAN REVISI KELAYAKAN OPSI (Revisi #8 & #9)
 export const EVENTS_MASTER = [
     { id: 'ev_1', title: "SERANGAN GENG RIVAL", desc: "Geng musuh menyerang markas Anda!", choices: [{ text: "Lawan (Min 150 PWR)", act: 'fight_rival' }, { text: "Bayar Damai (Rp 10 Juta)", act: 'pay_peace' }] },
     { id: 'ev_2', title: "SIDAK POLDA KETAT", desc: "Razia besar-besaran di wilayah operasi.", choices: [{ text: "Tutup Bisnis Sementara (Durasi 2m)", act: 'close_business' }, { text: "Abaikan (+15% Heat)", act: 'ignore_heat' }] },
