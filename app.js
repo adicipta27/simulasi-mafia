@@ -135,7 +135,7 @@ function createDefaultGameState() {
         availableExpeditions: [],
         activeCrime: null,
         activePvPWars: [],
-        incomingPvPAttack: [], // Serangan masuk saat offline/online
+        incomingPvPAttack: [],
         expeditionCountToday: 0,
         lastExpeditionDate: '',
         peaceShieldUntil: 0,
@@ -209,7 +209,6 @@ function setupAuthListeners() {
                 initUI();
                 renderLogs();
 
-                // PERBAIKAN: Langsung periksa serangan PvP masuk saat LOGIN dari offline!
                 checkIncomingPvPDefenseModal();
             }
         } else {
@@ -516,7 +515,7 @@ async function renderLeaderboard() {
     });
 }
 
-// PETA WILAYAH & PERANG PVP 15 MENIT
+// PETA WILAYAH & PERANG PVP 15 MENIT (REVISI SINKRONISASI KEPEMILIKAN)
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -539,15 +538,16 @@ function renderTurfMap() {
 
     grid.innerHTML = '';
     prov.cities.forEach(cityName => {
-        const isControlled = gameState.controlledCities[cityName];
+        const isControlledByMe = gameState.controlledCities[cityName];
         const occupant = globalOccupiedMap[cityName];
+
         let cardClass = 'controlled-enemy';
         let statusText = 'Dikuasai AI Rival';
 
-        if (isControlled) {
+        if (isControlledByMe) {
             cardClass = 'controlled-player';
             statusText = 'Wilayah Anda';
-        } else if (occupant && occupant.uid !== currentUser.uid) {
+        } else if (occupant) {
             cardClass = 'controlled-otherplayer';
             statusText = `Dikuasai Pemain: ${occupant.username}`;
         }
@@ -557,25 +557,39 @@ function renderTurfMap() {
         card.innerHTML = `
             <h4>${cityName}</h4>
             <p style="font-size:0.85rem;">Status: <strong>${statusText}</strong></p>
-            ${isControlled ? '<span class="text-green">✔ Wilayah Aman</span>' :
-              occupant && occupant.uid !== currentUser.uid ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="startPvPWar15Min('${cityName}')">Mulai Perang 15 Menit</button>` :
-              `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="reclaimCity('${cityName}')">Serang & Rebut</button>`}
+            ${isControlledByMe ? '<span class="text-green">✔ Wilayah Aman</span>' :
+              occupant ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="startPvPWar15Min('${cityName}')">Serang Pemain (15 Mnt)</button>` :
+              `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="reclaimCity('${cityName}')">Serang & Rebut AI</button>`}
         `;
         grid.appendChild(card);
     });
 }
 
-window.reclaimCity = function(cityName) {
+// MEREBUT KOTA DARI AI RIVAL (HANYA UNTUK KOTA KOSONG/AI)
+window.reclaimCity = async function(cityName) {
+    const occupant = globalOccupiedMap[cityName];
+    if (occupant) {
+        // Jika kota ternyata dikuasai pemain lain, alihkan ke PvP perang
+        startPvPWar15Min(cityName);
+        return;
+    }
+
     const myPwr = getPlayerTotalPower();
     if (myPwr < 100) {
         alert("Butuh minimal 100 PWR untuk menyerang kota!");
         return;
     }
+
     if (Math.random() < 0.6) {
         audioFX.playSuccess();
         gameState.controlledCities[cityName] = true;
+        
+        // UPDATE STATUS KOTA KE GLOBAL DATABASE
+        await updateCityOccupantGlobal(cityName, currentUser.uid, gameState.username);
+
         setAssistantMessage(`Sukses! Kota ${cityName} berhasil direbut.`);
         logMessage(`Berhasil merebut wilayah ${cityName}!`, 'success');
+        await cloudAutosaveInterval();
     } else {
         audioFX.playDanger();
         removeRandomMembers(1, 2);
@@ -587,7 +601,15 @@ window.reclaimCity = function(cityName) {
 
 window.startPvPWar15Min = async function(cityName) {
     const occupant = globalOccupiedMap[cityName];
-    if (!occupant) return;
+    if (!occupant) {
+        reclaimCity(cityName);
+        return;
+    }
+
+    if (occupant.uid === currentUser.uid) {
+        alert("Kota ini sudah milik Anda!");
+        return;
+    }
 
     const myPwr = getPlayerTotalPower();
     if (myPwr < 150) {
@@ -616,7 +638,6 @@ window.startPvPWar15Min = async function(cityName) {
     if (!gameState.activePvPWars) gameState.activePvPWars = [];
     gameState.activePvPWars.push(newWar);
 
-    // SIMPAN LANGSUNG KE FIRESTORE PEMAIN TARGET AGAR SINKRON SAAT DIA LOGIN
     if (targetCloudData) {
         if (!targetCloudData.incomingPvPAttack) targetCloudData.incomingPvPAttack = [];
         targetCloudData.incomingPvPAttack.push({
@@ -661,10 +682,13 @@ function pvpWarsTicker() {
                 }
                 gameState.money += lootedCash;
 
+                // FIX SINKRONISASI GLOBAL: UPDATE PEMILIK KOTA & HAPUS DARI PEMAIN LAMA
                 await updateCityOccupantGlobal(war.cityName, currentUser.uid, gameState.username);
 
                 if (targetCloudData) {
-                    delete targetCloudData.controlledCities[war.cityName];
+                    if (targetCloudData.controlledCities) {
+                        delete targetCloudData.controlledCities[war.cityName];
+                    }
                     targetCloudData.money = Math.max(0, targetCloudData.money - lootedCash);
                     targetCloudData.peaceShieldUntil = Date.now() + (12 * 60 * 60 * 1000);
                     delete targetCloudData.defendingMercenaries;
@@ -679,6 +703,7 @@ function pvpWarsTicker() {
             }
 
             gameState.activePvPWars = gameState.activePvPWars.filter(w => w.warId !== war.warId);
+            await cloudAutosaveInterval();
             updateUI();
         }
     });
@@ -716,7 +741,6 @@ function renderActivePvPWars() {
     });
 }
 
-// PERBAIKAN: MENAMPILKAN MODAL DEFENSE DARURAT SAAT PLAYER BARU LOGIN / ONLINE
 function checkIncomingPvPDefenseModal() {
     const modal = document.getElementById('pvp-defense-modal');
     if (!gameState.incomingPvPAttack || gameState.incomingPvPAttack.length === 0) {
@@ -725,7 +749,6 @@ function checkIncomingPvPDefenseModal() {
     }
 
     const now = Date.now();
-    // Filter serangan yang masih berlaku (belum kadaluarsa)
     gameState.incomingPvPAttack = gameState.incomingPvPAttack.filter(atk => now < atk.endTime);
 
     if (gameState.incomingPvPAttack.length === 0) {
