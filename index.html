@@ -204,13 +204,11 @@
             <h2 class="gold-text">PANDUAN LENGKAP KARTEL MAFIA</h2>
             <div class="guide-content">
                 <h4>1. Invasi Kota AI (15 Menit Perjalanan & Alokasi Pasukan)</h4>
-                <p>Serangan ke wilayah AI kini membutuhkan alokasi Pasukan & Senjata yang akan pergi dari markas utama selama 15 menit. Hanya bisa melancarkan 1 serangan invasi dalam satu waktu.</p>
+                <p>Serangan ke wilayah AI membutuhkan alokasi Pasukan & Senjata yang akan pergi dari markas utama selama 15 menit.</p>
                 <h4>2. Garnisun Kota & Serangan Balik AI</h4>
-                <p>Simpan Pasukan & Senjata di setiap kota yang Anda kuasai. Rival AI Engine akan menyerang kota Anda secara acak. Jika Power Garnisun kurang, kota akan jatuh kembali ke AI!</p>
-                <h4>3. Status Buronan & Wilayah Merah (Bintang Polda)</h4>
-                <p>Jika Heat Level menyentuh 70%+, status Anda menjadi Buronan Polda dan Basecamp Anda memasuki Red Zone (pendapatan pasif kota dipotong 50%).</p>
-                <h4>4. Koran Berita Nasional Live</h4>
-                <p>Diperbarui setiap 1 jam, menyimpan 10 berita terbaru seputar dinamika Rival AI, politik Pilkada, bursa gelap, dan operasi Polda.</p>
+                <p>Simpan Pasukan & Senjata di setiap kota yang Anda kuasai. Rival AI Engine akan menyerang kota Anda secara acak.</p>
+                <h4>3. Koran Berita Nasional (Edisi Tiap 30 Menit)</h4>
+                <p>Koran terus memuat warta berita secara konsisten. Meskipun Anda offline, 10 berita terhangat akan tersaji secara utuh saat Anda kembali login.</p>
             </div>
             <button class="btn btn-gold full-btn" onclick="toggleGuideModal(false)">TUTUP PANDUAN</button>
         </div>
@@ -270,7 +268,7 @@
             </div>
         </header>
 
-        <!-- Main Category Navigation (Rapi & Terstruktur) -->
+        <!-- Main Category Navigation -->
         <nav class="nav-tabs">
             <button class="nav-btn active" onclick="switchCategory('domain')">🗺️ Domain & Peta</button>
             <button class="nav-btn" onclick="switchCategory('business')">🏢 Operasi Bisnis</button>
@@ -381,7 +379,7 @@
                 <!-- Tab: Rival AI Boss Engine -->
                 <section id="tab-rivals" class="sub-tab-content">
                     <h3>🕵️ PERANG INTELIJEN & RIVAL AI BOSS ENGINE</h3>
-                    <p>3 Bos Kartel AI yang bergerak aktif di Indonesia. Level & Power mereka berubah tiap jam!</p>
+                    <p>3 Bos Kartel AI yang bergerak aktif di Indonesia. Level & Power mereka berubah tiap 30 menit!</p>
                     <div class="card-grid" id="ai-boss-list-grid"></div>
                 </section>
             </div>
@@ -391,7 +389,12 @@
                 
                 <!-- Tab: Koran Berita Nasional -->
                 <section id="tab-news" class="sub-tab-content active">
-                    <h3>📰 KORAN BERITA NASIONAL (UPDATE TIAP 1 JAM)</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3>📰 KORAN BERITA NASIONAL (UPDATE TIAP 30 MENIT)</h3>
+                        <div style="background:#000; border:1px solid var(--gold); padding:5px 12px; border-radius:20px; font-size:0.85rem;">
+                            Edisi Berikutnya: <strong id="news-countdown-timer" class="text-yellow">29:59</strong>
+                        </div>
+                    </div>
                     <p>Menampilkan 10 warta wacana terpanas seputar dinamika Underworld Indonesia.</p>
                     <div id="national-newspaper-feed" class="newspaper-container"></div>
                 </section>
@@ -435,8 +438,8 @@
                 
                 <!-- Tab: Misi & Kontrak -->
                 <section id="tab-bounty" class="sub-tab-content active">
-                    <h3>📜 MISI CERITA & KONTRAK REPUTASI UNDERWORLD</h3>
-                    <p>Selesaikan instruksi khusus dari kartel senior untuk meraih Reputasi (REP) & Modal Kas!</p>
+                    <h3>📜 STORY CAMPAIGN: KONTRAK REPUTASI UNDERWORLD</h3>
+                    <p>Selesaikan instruksi bertingkat (Tier 1 - Tier 5) untuk meraih Reputasi (REP) & Modal Kas!</p>
                     <div class="card-grid" id="contracts-list-grid"></div>
                 </section>
 
