@@ -151,7 +151,6 @@ let globalOccupiedMap = {};
 let nationalNewsFeed = [];
 let newsLastUpdateTs = Date.now();
 
-// INTERVAL KORAN & AI DYNAMIC SCALING DIUBAH JADI 5 MENIT (300.000 MS)
 const NEWS_INTERVAL_MS = 5 * 60 * 1000;
 
 let globalPilkada = {
@@ -172,7 +171,6 @@ let currentGarrisonCityTarget = null;
 let jailMiniGamePattern = [];
 let jailMiniGameUserIdx = 0;
 
-// SUB NAV CONFIG MAP
 const CATEGORY_SUB_NAVS = {
     domain: [
         { id: 'tab-map', label: '🗺️ Peta MMO' },
@@ -204,12 +202,15 @@ let activeCategory = 'domain';
 
 // INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
-    // Tampilkan modal auth saat pertama kali dibuka
+    // Pastikan modal login dipaksa muncul saat pertama kali dibuka
     const authModal = document.getElementById('auth-modal');
     if (authModal) authModal.classList.remove('hidden');
 
-    document.getElementById('game-container').classList.add('hidden');
-    document.getElementById('setup-modal').classList.add('hidden');
+    const gameContainer = document.getElementById('game-container');
+    if (gameContainer) gameContainer.classList.add('hidden');
+
+    const setupModal = document.getElementById('setup-modal');
+    if (setupModal) setupModal.classList.add('hidden');
 
     setupAuthListeners();
     populateSetupSelects();
@@ -224,6 +225,10 @@ window.addEventListener('DOMContentLoaded', () => {
 // AUTH SYSTEM
 function setupAuthListeners() {
     onAuthStateChanged(auth, async (user) => {
+        const authModal = document.getElementById('auth-modal');
+        const setupModal = document.getElementById('setup-modal');
+        const gameContainer = document.getElementById('game-container');
+
         if (user) {
             currentUser = user;
             gameState = createDefaultGameState();
@@ -234,7 +239,8 @@ function setupAuthListeners() {
             newsLastUpdateTs = newsData.lastUpdateTs || Date.now();
             await checkAndCatchUpOfflineNews();
 
-            document.getElementById('auth-modal').classList.add('hidden');
+            if (authModal) authModal.classList.add('hidden');
+
             const cloudData = await loadUserDataFromCloud(user.uid);
             if (cloudData) gameState = { ...createDefaultGameState(), ...cloudData };
 
@@ -243,7 +249,6 @@ function setupAuthListeners() {
             const cloudPilkada = await fetchGlobalPilkadaData();
             if (cloudPilkada) globalPilkada = cloudPilkada;
 
-            // Recovery Timer Perang Offline (2 Menit)
             const now = Date.now();
             if (gameState.activeAiAttacks) {
                 gameState.activeAiAttacks.forEach(atk => {
@@ -255,11 +260,11 @@ function setupAuthListeners() {
             }
 
             if (!gameState.setupDone) {
-                document.getElementById('setup-modal').classList.remove('hidden');
-                document.getElementById('game-container').classList.add('hidden');
+                if (setupModal) setupModal.classList.remove('hidden');
+                if (gameContainer) gameContainer.classList.add('hidden');
             } else {
-                document.getElementById('setup-modal').classList.add('hidden');
-                document.getElementById('game-container').classList.remove('hidden');
+                if (setupModal) setupModal.classList.add('hidden');
+                if (gameContainer) gameContainer.classList.remove('hidden');
                 switchCategory('domain');
                 initUI();
                 renderLogs();
@@ -269,9 +274,9 @@ function setupAuthListeners() {
         } else {
             currentUser = null;
             gameState = createDefaultGameState();
-            document.getElementById('auth-modal').classList.add('hidden');
-            document.getElementById('game-container').classList.add('hidden');
-            document.getElementById('setup-modal').classList.add('hidden');
+            if (authModal) authModal.classList.remove('hidden');
+            if (gameContainer) gameContainer.classList.add('hidden');
+            if (setupModal) setupModal.classList.add('hidden');
         }
     });
 }
@@ -623,7 +628,7 @@ function setAssistantMessage(msg) {
     if (el) el.innerText = `"${msg}"`;
 }
 
-// KORAN BERITA NASIONAL & DYNAMIC AI SCALING TIAP 5 MENIT (BERDASARKAN SERVER POWER)
+// KORAN BERITA NASIONAL & DYNAMIC AI SCALING TIAP 5 MENIT
 async function checkAndCatchUpOfflineNews() {
     const now = Date.now();
     const elapsedMs = now - newsLastUpdateTs;
@@ -747,7 +752,7 @@ function renderNationalNewspaper() {
     });
 }
 
-// RIVAL AI BOSS ENGINE (DENGAN SADAP INTELEJEN & ILUSTRASI FOTO)
+// RIVAL AI BOSS ENGINE
 function renderAiBossList() {
     const grid = document.getElementById('ai-boss-list-grid');
     if (!grid) return;
@@ -815,7 +820,7 @@ async function renderLeaderboard() {
     }
 }
 
-// GARNISUN KOTA & SERANGAN BALIK AI DINAMIS
+// GARNISUN KOTA & SERANGAN BALIK AI
 function renderGarrisonCitiesGrid() {
     const grid = document.getElementById('garrison-cities-grid');
     if (!grid) return;
@@ -924,7 +929,6 @@ window.closeGarrisonModal = function() {
     currentGarrisonCityTarget = null;
 };
 
-// SERANGAN BALIK RIVAL AI KE KOTA PEMAIN (SINKRONISASI KOTA JATUH)
 function randomAiRetaliationCheck() {
     const myCities = Object.keys(gameState.controlledCities || {});
     if (myCities.length <= 1) return;
@@ -952,7 +956,7 @@ function randomAiRetaliationCheck() {
     }
 }
 
-// RENDER MISI STORY CAMPAIGN BERTIENGKAT
+// RENDER MISI STORY CAMPAIGN
 function renderContractsUI() {
     const grid = document.getElementById('contracts-list-grid');
     if (!grid) return;
@@ -1041,7 +1045,7 @@ window.claimStoryContract = function(cId) {
     } else alert("Syarat target misi campaign belum terpenuhi sepenuhnya!");
 };
 
-// PETA WILAYAH & MODAL INPUT PASUKAN (2 MENIT & POWER REAL-TIME)
+// PETA WILAYAH
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -2219,7 +2223,6 @@ function eventModalTimerTicker() {
     }
 }
 
-// PERBAIKAN BIAYA SABOTASE (RP 15.000.000)
 function handleEventAction(act, choiceText = '') {
     document.getElementById('event-modal').classList.add('hidden');
     currentActiveEvent = null;
