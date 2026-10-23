@@ -55,7 +55,7 @@ export async function updateCityOccupantGlobal(cityName, uid, username) {
         if (uid) {
             map[cityName] = { uid, username };
         } else {
-            delete map[cityName]; // Kembalikan ke AI
+            delete map[cityName];
         }
 
         await setDoc(ref, { map }, { merge: true });
@@ -93,20 +93,24 @@ export async function saveUserDataToCloud(uid, gameState) {
     }
 }
 
+// PERBAIKAN LEADERBOARD DATA FETCH
 export async function fetchLeaderboardData() {
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
         let players = [];
+
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            if (data.setupDone) {
-                const cityCount = Object.keys(data.controlledCities || {}).length;
+            if (data && data.setupDone) {
+                const cityCount = data.controlledCities ? Object.keys(data.controlledCities).length : 1;
+                const userMoney = typeof data.money === 'number' ? data.money : 0;
+                const displayName = data.username || (data.email ? data.email.split('@')[0] : 'Bos Kartel');
 
                 players.push({
                     uid: docSnap.id,
-                    username: data.username || 'Bos Kartel',
+                    username: displayName,
                     cities: cityCount,
-                    money: data.money || 0
+                    money: userMoney
                 });
             }
         });
@@ -115,6 +119,7 @@ export async function fetchLeaderboardData() {
             if (b.cities !== a.cities) return b.cities - a.cities;
             return b.money - a.money;
         });
+
         return players;
     } catch (err) {
         console.error("Fetch leaderboard error:", err);
@@ -141,22 +146,24 @@ export async function saveGlobalPilkadaData(pilkadaState) {
     }
 }
 
+// KORAN DATA SYNC
 export async function fetchNationalNewsData() {
     try {
         const snap = await getDoc(doc(db, "meta", "newspaper"));
-        if (snap.exists()) return snap.data().feed || [];
-        return [];
+        if (snap.exists()) {
+            return snap.data();
+        }
+        return { feed: [], lastUpdateTs: Date.now() };
     } catch (err) {
         console.error("Fetch news error:", err);
-        return [];
+        return { feed: [], lastUpdateTs: Date.now() };
     }
 }
 
-export async function saveNationalNewsData(feedArray) {
+export async function saveNationalNewsData(feedArray, lastUpdateTs) {
     try {
-        // Simpan Maksimal 10 Berita Terbaru
         const trimmedFeed = feedArray.slice(0, 10);
-        await setDoc(doc(db, "meta", "newspaper"), { feed: trimmedFeed }, { merge: true });
+        await setDoc(doc(db, "meta", "newspaper"), { feed: trimmedFeed, lastUpdateTs: lastUpdateTs }, { merge: true });
     } catch (err) {
         console.error("Save news error:", err);
     }
