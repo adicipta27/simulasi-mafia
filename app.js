@@ -79,19 +79,22 @@ const STORY_CONTRACTS_MASTER = [
     { id: 'c12', reqRep: 1200, title: 'TIER 5: Don Sindikat Supreme', desc: 'Raih gelar Don Sindikat Indonesia (Kuasai 30 Kota & 3.000 PWR).', reqCities: 30, reqPwr: 3000, rewardCash: 1000000000, rewardRep: 1000 }
 ];
 
-// MASTER RIVAL AI BOSS ENGINE (DENGAN ILUSTRASI)
+// MASTER RIVAL AI BOSS ENGINE
 let aiRivalBosses = [
     { id: 'pantura', name: 'Geng Pantura (Sutrisno)', level: 3, pwr: 250, desc: 'Menguasai jalur logistik pesisir utara.', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80', isRevealed: false },
     { id: 'belawan', name: 'Sindikat Belawan (Bakar)', level: 4, pwr: 400, desc: 'Penyelundup senjata tajam & gelap Sumatra.', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80', isRevealed: false },
     { id: 'celebes', name: 'Kartel Celebes (Daeng Rawa)', level: 5, pwr: 650, desc: 'Jaringan perdagangan komoditas rahasia timur.', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&q=80', isRevealed: false }
 ];
 
-// GAMBAR ILUSTRASI TAMBAHAN
+// REVISI POINT 5: GAMBAR ILUSTRASI BISNIS HARAM SESUAI NAMA DAN JENISNYA
 const BUSINESS_IMAGES = {
     'parkir_liar': 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=500&q=80',
+    'warung_remang': 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=500&q=80',
     'judol_server': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&q=80',
     'distribusi_rokok': 'https://images.unsplash.com/photo-1527181152855-fc03fc7949c8?w=500&q=80',
-    'tambang_ilegal': 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=500&q=80'
+    'tambang_ilegal': 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=500&q=80',
+    'kasino_gelap': 'https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=500&q=80',
+    'penyelundupan_bbm': 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?w=500&q=80'
 };
 
 const OFFICER_IMAGES = {
@@ -202,9 +205,11 @@ let activeCategory = 'domain';
 
 // INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
-    // Pastikan modal login dipaksa muncul saat pertama kali dibuka
     const authModal = document.getElementById('auth-modal');
-    if (authModal) authModal.classList.remove('hidden');
+    if (authModal) {
+        authModal.classList.remove('hidden');
+        authModal.style.display = 'flex';
+    }
 
     const gameContainer = document.getElementById('game-container');
     if (gameContainer) gameContainer.classList.add('hidden');
@@ -212,14 +217,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const setupModal = document.getElementById('setup-modal');
     if (setupModal) setupModal.classList.add('hidden');
 
-    setupAuthListeners();
-    populateSetupSelects();
+    try {
+        setupAuthListeners();
+        populateSetupSelects();
 
-    setInterval(secondTicker, 1000);
-    setInterval(cloudAutosaveInterval, 15000);
-    rotateExpeditionMissions();
-    setInterval(rotateExpeditionMissions, 30000);
-    scheduleNextRandomEvent();
+        setInterval(secondTicker, 1000);
+        setInterval(cloudAutosaveInterval, 15000);
+        rotateExpeditionMissions();
+        setInterval(rotateExpeditionMissions, 30000);
+        scheduleNextRandomEvent();
+    } catch (err) {
+        console.error("Gagal menjalankan inisialisasi game:", err);
+    }
 });
 
 // AUTH SYSTEM
@@ -274,7 +283,10 @@ function setupAuthListeners() {
         } else {
             currentUser = null;
             gameState = createDefaultGameState();
-            if (authModal) authModal.classList.remove('hidden');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                authModal.style.display = 'flex';
+            }
             if (gameContainer) gameContainer.classList.add('hidden');
             if (setupModal) setupModal.classList.add('hidden');
         }
@@ -422,7 +434,7 @@ window.submitInitialSetup = async function() {
     const cName = document.getElementById('setup-city-select').value;
     const username = gameState.username;
 
-    const result = await claimBasecampGlobal(cName, currentUser.uid, username);
+    const result = await claimBasecampGlobal(cName, currentUser.uid, username, 0);
     if (!result.success) {
         alert(result.message);
         populateSetupSelects();
@@ -628,7 +640,7 @@ function setAssistantMessage(msg) {
     if (el) el.innerText = `"${msg}"`;
 }
 
-// KORAN BERITA NASIONAL & DYNAMIC AI SCALING TIAP 5 MENIT
+// REVISI POINT 1: KORAN BERITA NASIONAL (TANPA MEMBOCORKAN ANGKA PWR MAFIA AI)
 async function checkAndCatchUpOfflineNews() {
     const now = Date.now();
     const elapsedMs = now - newsLastUpdateTs;
@@ -694,11 +706,12 @@ async function generateSingleNewsItem() {
     });
 
     const headlinesPool = [
-        `🚨 PERGERAKAN RIVAL: ${aiRivalBosses[0].name} menyesuaikan kekuatan pasukannya menjadi ${aiRivalBosses[0].pwr} PWR!`,
+        `🚨 PERGERAKAN RIVAL: Intelijen melaporkan ${aiRivalBosses[0].name} melakukan rekrutmen masif di wilayah kekuasaannya!`,
         `📈 BURSA GELAP: Kelangkaan senjata impor membuat harga pasar gelap naik pesat!`,
-        `⚔️ AMBISI KARTEL: ${aiRivalBosses[2].name} mengumpulkan persenjataan berat! Total Power kini mencapai ${aiRivalBosses[2].pwr} PWR.`,
+        `⚔️ AMBISI KARTEL: ${aiRivalBosses[2].name} dikabarkan mengumpulkan persenjataan berat untuk menguasai jalur timur!`,
         `🏛️ HOT PILKADA: Modal politik anonim mendominasi elektabilitas suara calon gubernur.`,
-        `🚚 BEA CUKAI: Armada penyelundupan rokok ilegal berhasil disergap petugas di selat pulau.`
+        `🚚 BEA CUKAI: Armada penyelundupan rokok ilegal berhasil disergap petugas di selat pulau.`,
+        `👁️ INTELIJEN POLDA: ${aiRivalBosses[1].name} memperketat pengawalan di pelabuhan rahasia Sumatra.`
     ];
 
     const chosenDesc = headlinesPool[Math.floor(Math.random() * headlinesPool.length)];
@@ -820,7 +833,7 @@ async function renderLeaderboard() {
     }
 }
 
-// GARNISUN KOTA & SERANGAN BALIK AI
+// GARNISUN KOTA & SERANGAN BALIK AI / PVP
 function renderGarrisonCitiesGrid() {
     const grid = document.getElementById('garrison-cities-grid');
     if (!grid) return;
@@ -878,7 +891,7 @@ function updateGarrisonModalUI() {
     document.getElementById('garrison-base-weapons').innerText = gameState.weapons || 0;
 }
 
-window.transferGarrisonMember = function(action) {
+window.transferGarrisonMember = async function(action) {
     if (!currentGarrisonCityTarget) return;
     const gar = gameState.cityGarrisons[currentGarrisonCityTarget];
     const count = parseInt(document.getElementById('garrison-input-members').value) || 0;
@@ -898,12 +911,17 @@ window.transferGarrisonMember = function(action) {
         }
     }
     audioFX.playSuccess();
+    
+    // REVISI POINT 3: UPDATE POWER GARNISUN REALTIME KE FIREBASE
+    const updatedGarPwr = getCityGarrisonPower(currentGarrisonCityTarget);
+    await updateCityOccupantGlobal(currentGarrisonCityTarget, currentUser.uid, gameState.username, updatedGarPwr);
+
     updateGarrisonModalUI();
     renderGarrisonCitiesGrid();
     updateUI();
 };
 
-window.transferGarrisonWeapon = function(action) {
+window.transferGarrisonWeapon = async function(action) {
     if (!currentGarrisonCityTarget) return;
     const gar = gameState.cityGarrisons[currentGarrisonCityTarget];
     const count = parseInt(document.getElementById('garrison-input-weapons').value) || 0;
@@ -919,6 +937,11 @@ window.transferGarrisonWeapon = function(action) {
         gameState.weapons += count;
     }
     audioFX.playSuccess();
+
+    // REVISI POINT 3: UPDATE POWER GARNISUN REALTIME KE FIREBASE
+    const updatedGarPwr = getCityGarrisonPower(currentGarrisonCityTarget);
+    await updateCityOccupantGlobal(currentGarrisonCityTarget, currentUser.uid, gameState.username, updatedGarPwr);
+
     updateGarrisonModalUI();
     renderGarrisonCitiesGrid();
     updateUI();
@@ -929,6 +952,7 @@ window.closeGarrisonModal = function() {
     currentGarrisonCityTarget = null;
 };
 
+// REVISI POINT 4: JIKA GARNISUN KALAH DALAM RETALIASI AI, KOTA JATUH KEMBALI KE AI
 function randomAiRetaliationCheck() {
     const myCities = Object.keys(gameState.controlledCities || {});
     if (myCities.length <= 1) return;
@@ -948,7 +972,8 @@ function randomAiRetaliationCheck() {
             delete gameState.controlledCities[targetCity];
             delete gameState.cityGarrisons[targetCity];
             
-            updateCityOccupantGlobal(targetCity, null, '');
+            // Pengembalian wilayah ke AI (null)
+            updateCityOccupantGlobal(targetCity, null, '', 0);
 
             logMessage(`KOTA JATUH KEMBALI KE AI: Kota ${targetCity} berhasil direbut Rival AI! Garnisun (${garPwr} PWR) kalah lawan AI (${aiAttackPwr} PWR).`, 'danger');
             updateUI();
@@ -1060,6 +1085,7 @@ async function populateProvinceViewSelect() {
     sel.value = gameState.homeProvince;
 }
 
+// REVISI POINT 3: KOTA PEMAIN LAIN DITAMPILKAN DENGAN POWER GARNISUN ASLI
 function renderTurfMap() {
     const grid = document.getElementById('turf-map-grid');
     const selProvId = document.getElementById('province-view-select') ? document.getElementById('province-view-select').value : gameState.homeProvince;
@@ -1073,6 +1099,7 @@ function renderTurfMap() {
         const isControlledByMe = gameState.controlledCities[cityName];
         const occupant = globalOccupiedMap[cityName];
         const isBeingAttackedByAi = (gameState.activeAiAttacks || []).some(atk => atk.cityName === cityName);
+        const isBeingAttackedPvP = (gameState.activePvPWars || []).some(w => w.cityName === cityName);
 
         let cardClass = 'controlled-enemy'; 
         let statusText = 'Dikuasai AI Rival';
@@ -1085,8 +1112,9 @@ function renderTurfMap() {
         } else if (occupant) {
             cardClass = 'controlled-otherplayer'; 
             statusText = `Dikuasai Pemain: ${occupant.username}`;
-            cityPowerLabel = `150+ PWR`;
-        } else if (isBeingAttackedByAi) {
+            const garPwrVal = typeof occupant.garrisonPower === 'number' ? occupant.garrisonPower : 0;
+            cityPowerLabel = `${garPwrVal} PWR (Garnisun)`;
+        } else if (isBeingAttackedByAi || isBeingAttackedPvP) {
             statusText = 'Pasukan Dalam Perjalanan (2 Mnt)...';
         }
 
@@ -1098,7 +1126,7 @@ function renderTurfMap() {
             <p style="font-size:0.8rem; color:var(--text-muted);">Kekuatan: <strong class="text-yellow">${cityPowerLabel}</strong></p>
             ${isControlledByMe ? '<span class="text-green">✔ Wilayah Aman</span>' :
               occupant ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" ${warBusy ? 'disabled' : ''} onclick="openAttackDeployModal('${cityName}', 'pvp')">${warBusy ? 'Sedang Perang...' : 'Serang Pemain (2 Mnt)'}</button>` :
-              isBeingAttackedByAi ? `<button class="btn btn-gold btn-xs" style="margin-top:10px; width:100%;" disabled>Menyerang (2 Mnt)...</button>` :
+              (isBeingAttackedByAi || isBeingAttackedPvP) ? `<button class="btn btn-gold btn-xs" style="margin-top:10px; width:100%;" disabled>Menyerang (2 Mnt)...</button>` :
               `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" ${warBusy ? 'disabled' : ''} onclick="openAttackDeployModal('${cityName}', 'ai')">${warBusy ? 'Sedang Perang...' : 'Invasi AI (2 Mnt)'}</button>`}
         `;
         grid.appendChild(card);
@@ -1210,7 +1238,9 @@ function aiAttacksTicker() {
             if (atk.pwr >= 100 && Math.random() < 0.70) {
                 audioFX.playSuccess();
                 gameState.controlledCities[atk.cityName] = true;
-                await updateCityOccupantGlobal(atk.cityName, currentUser.uid, gameState.username);
+                
+                // Pemenang menguasai kota, garnisun awal 0
+                await updateCityOccupantGlobal(atk.cityName, currentUser.uid, gameState.username, 0);
 
                 (atk.deployedMembers || []).forEach(m => gameState.members.push(m));
                 gameState.weapons = (gameState.weapons || 0) + (atk.deployedWeapons || 0);
@@ -1232,39 +1262,70 @@ function aiAttacksTicker() {
     renderActiveAiAttacks();
 }
 
+// REVISI POINT 2: COUNTDOWN OPERASI PERANG PVP DITAMPILKAN SAMA SEPERTI AI
 function renderActiveAiAttacks() {
     const grid = document.getElementById('active-ai-attacks-grid');
     if (!grid) return;
-    grid.innerHTML = '';
 
-    if (!gameState.activeAiAttacks || gameState.activeAiAttacks.length === 0) {
-        grid.innerHTML = '<p class="text-muted">Tidak ada armada perang berjalan.</p>';
-        return;
-    }
+    let hasAttacks = false;
+    let htmlContent = '';
 
     const now = Date.now();
-    gameState.activeAiAttacks.forEach(atk => {
-        const sisaSec = Math.max(0, Math.ceil((atk.endTime - now) / 1000));
-        const min = Math.floor(sisaSec / 60);
-        const sec = sisaSec % 60;
 
-        const card = document.createElement('div');
-        card.className = 'game-card controlled-enemy';
-        card.innerHTML = `
-            <div>
-                <h4>Perang Invasi AI: ${atk.cityName}</h4>
-                <p>Pasukan Dikirim: <strong>${(atk.deployedMembers||[]).length} Orang, ${atk.deployedWeapons||0} Senjata</strong></p>
-                <p>Power Invasi: <strong>${atk.pwr} PWR</strong></p>
-                <p>Sisa Waktu Pertempuran: <strong class="text-yellow">${min}:${sec < 10 ? '0' : ''}${sec}</strong></p>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
+    // RENDER COUNTDOWN INVASI AI
+    if (gameState.activeAiAttacks && gameState.activeAiAttacks.length > 0) {
+        hasAttacks = true;
+        gameState.activeAiAttacks.forEach(atk => {
+            const sisaSec = Math.max(0, Math.ceil((atk.endTime - now) / 1000));
+            const min = Math.floor(sisaSec / 60);
+            const sec = sisaSec % 60;
+
+            htmlContent += `
+                <div class="game-card controlled-enemy">
+                    <div>
+                        <h4>Perang Invasi AI: ${atk.cityName}</h4>
+                        <p>Pasukan Dikirim: <strong>${(atk.deployedMembers||[]).length} Orang, ${atk.deployedWeapons||0} Senjata</strong></p>
+                        <p>Power Invasi: <strong>${atk.pwr} PWR</strong></p>
+                        <p>Sisa Waktu Pertempuran: <strong class="text-yellow">${min}:${sec < 10 ? '0' : ''}${sec}</strong></p>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // RENDER COUNTDOWN SERANGAN PVP PEMAIN
+    if (gameState.activePvPWars && gameState.activePvPWars.length > 0) {
+        hasAttacks = true;
+        gameState.activePvPWars.forEach(w => {
+            const sisaSec = Math.max(0, Math.ceil((w.endTime - now) / 1000));
+            const min = Math.floor(sisaSec / 60);
+            const sec = sisaSec % 60;
+
+            htmlContent += `
+                <div class="game-card controlled-enemy">
+                    <div>
+                        <h4>Serangan PvP Pemain: ${w.cityName}</h4>
+                        <p>Target Pemain: <strong>${w.targetUsername}</strong></p>
+                        <p>Pasukan Dikirim: <strong>${(w.deployedMembers||[]).length} Orang, ${w.deployedWeapons||0} Senjata</strong></p>
+                        <p>Power Invasi: <strong>${w.attackerPwr} PWR</strong></p>
+                        <p>Sisa Waktu Pasukan Tiba: <strong class="text-yellow">${min}:${sec < 10 ? '0' : ''}${sec}</strong></p>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    if (!hasAttacks) {
+        grid.innerHTML = '<p class="text-muted">Tidak ada armada perang berjalan.</p>';
+    } else {
+        grid.innerHTML = htmlContent;
+    }
 }
 
+// REVISI POINT 4: SISTEM JIKA GARNISUN KALAH DALAM PVP, KOTA PINDAH KEPEMILIKAN
 function pvpWarsTicker() {
     if (!gameState.activePvPWars || gameState.activePvPWars.length === 0) {
-        renderActivePvPWars();
+        renderActiveAiAttacks();
         return;
     }
 
@@ -1272,14 +1333,18 @@ function pvpWarsTicker() {
     gameState.activePvPWars.forEach(async (war) => {
         if (now >= war.endTime) {
             const targetCloudData = await loadUserDataFromCloud(war.targetUid);
-            let targetPwr = 200;
-            if (targetCloudData) {
-                targetPwr = (targetCloudData.weapons || 0) * 25;
-                (targetCloudData.members || []).forEach(m => targetPwr += (m.power || 0));
-                if (targetCloudData.defendingMercenaries) targetPwr += 100;
+            
+            // Hitung Power Garnisun milik Pemain Bertahan di Kota Tersebut
+            let targetGarPwr = 0;
+            if (targetCloudData && targetCloudData.cityGarrisons && targetCloudData.cityGarrisons[war.cityName]) {
+                const targetGar = targetCloudData.cityGarrisons[war.cityName];
+                targetGarPwr += (targetGar.weapons || 0) * 25;
+                (targetGar.members || []).forEach(m => targetGarPwr += (m.power || 0));
             }
 
-            if (war.attackerPwr > targetPwr) {
+            if (targetCloudData && targetCloudData.defendingMercenaries) targetGarPwr += 100;
+
+            if (war.attackerPwr > targetGarPwr) {
                 audioFX.playSuccess();
                 gameState.controlledCities[war.cityName] = true;
                 let lootedCash = 15000000;
@@ -1291,10 +1356,12 @@ function pvpWarsTicker() {
                 (war.deployedMembers || []).forEach(m => gameState.members.push(m));
                 gameState.weapons = (gameState.weapons || 0) + (war.deployedWeapons || 0);
 
-                await updateCityOccupantGlobal(war.cityName, currentUser.uid, gameState.username);
+                // Update Kepemilikan Kota di Firebase ke Pemain Penyerang (Pemenang)
+                await updateCityOccupantGlobal(war.cityName, currentUser.uid, gameState.username, 0);
 
                 if (targetCloudData) {
                     if (targetCloudData.controlledCities) delete targetCloudData.controlledCities[war.cityName];
+                    if (targetCloudData.cityGarrisons) delete targetCloudData.cityGarrisons[war.cityName];
                     targetCloudData.money = Math.max(0, targetCloudData.money - lootedCash);
                     targetCloudData.peaceShieldUntil = Date.now() + (12 * 60 * 60 * 1000);
                     delete targetCloudData.defendingMercenaries;
@@ -1304,7 +1371,7 @@ function pvpWarsTicker() {
                 logMessage(`PERANG PVP SELESAI: Berhasil merebut ${war.cityName} dari ${war.targetUsername} & menjarah Rp ${lootedCash.toLocaleString('id-ID')}! Pasukan kembali.`, 'success');
             } else {
                 audioFX.playDanger();
-                logMessage(`PERANG PVP SELESAI: Serangan ke ${war.cityName} dipukul mundur oleh pertahanan ${war.targetUsername}. Pasukan gugur.`, 'danger');
+                logMessage(`PERANG PVP SELESAI: Serangan ke ${war.cityName} dipukul mundur oleh garnisun (${targetGarPwr} PWR) milik ${war.targetUsername}. Pasukan gugur.`, 'danger');
             }
 
             gameState.activePvPWars = [];
@@ -1313,34 +1380,8 @@ function pvpWarsTicker() {
         }
     });
 
-    renderActivePvPWars();
+    renderActiveAiAttacks();
     checkIncomingPvPDefenseModal();
-}
-
-function renderActivePvPWars() {
-    const grid = document.getElementById('active-wars-grid');
-    if (!grid) return;
-
-    if (!gameState.activePvPWars || gameState.activePvPWars.length === 0) return;
-
-    const now = Date.now();
-    gameState.activePvPWars.forEach(w => {
-        const sisaSec = Math.max(0, Math.ceil((w.endTime - now) / 1000));
-        const min = Math.floor(sisaSec / 60);
-        const sec = sisaSec % 60;
-
-        const card = document.createElement('div');
-        card.className = 'game-card controlled-enemy';
-        card.innerHTML = `
-            <div>
-                <h4>Serangan PvP: ${w.cityName}</h4>
-                <p>Target: <strong>${w.targetUsername}</strong></p>
-                <p>Pasukan Dikirim: <strong>${(w.deployedMembers||[]).length} Orang, ${w.deployedWeapons||0} Senjata (${w.attackerPwr} PWR)</strong></p>
-                <p>Sisa Waktu Pasukan Tiba: <strong class="text-yellow">${min}:${sec < 10 ? '0' : ''}${sec}</strong></p>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
 }
 
 function checkIncomingPvPDefenseModal() {
@@ -1637,7 +1678,7 @@ function crimeSingleTicker() {
     }
 }
 
-// BISNIS HARAM
+// REVISI POINT 5: BISNIS HARAM DENGAN FOTO ILUSTRASI SESUAI KATEGORI
 function renderBusiness() {
     const container = document.getElementById('business-list');
     if (!container) return;
@@ -1645,7 +1686,7 @@ function renderBusiness() {
 
     BUSINESS_DATA.forEach(b => {
         const count = gameState.businesses[b.id] || 0;
-        const bizImg = b.img || BUSINESS_IMAGES[b.id] || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&q=80';
+        const bizImg = BUSINESS_IMAGES[b.id] || b.img || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&q=80';
 
         const card = document.createElement('div');
         card.className = 'game-card';
