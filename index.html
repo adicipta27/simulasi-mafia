@@ -21,22 +21,22 @@
     <!-- Modal Konfirmasi Kirim Pasukan Invasi AI / PvP -->
     <div id="attack-deploy-modal" class="modal-overlay hidden" style="z-index: 16000;">
         <div class="modal-card border-red">
-            <h2 class="gold-text">KIRIM PASUKAN INVASII</h2>
+            <h2 class="gold-text">KIRIM PASUKAN OPERASI PERANG</h2>
             <p id="attack-deploy-target-label" style="margin-top:5px; font-weight:700;" class="text-yellow">Target: -</p>
-            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">Waktu perjalanan pasukan: 15 Menit. Pasukan yang dikirim akan meninggalkan markas utama.</p>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">Waktu perjalanan pasukan: 2 Menit (120 Detik). Pasukan yang dikirim akan meninggalkan markas utama.</p>
 
             <div class="form-group">
                 <label>Jumlah Pasukan Dikirim (Tersedia: <span id="deploy-avail-members">0</span>)</label>
-                <input type="number" id="deploy-member-count" min="1" value="1">
+                <input type="number" id="deploy-member-count" min="1" value="1" onchange="calculateDeployPowerEstimate()">
             </div>
             <div class="form-group">
                 <label>Jumlah Senjata Dikirim (Tersedia: <span id="deploy-avail-weapons">0</span>)</label>
-                <input type="number" id="deploy-weapon-count" min="0" value="0">
+                <input type="number" id="deploy-weapon-count" min="0" value="0" onchange="calculateDeployPowerEstimate()">
             </div>
 
             <p style="font-size:0.9rem; margin-bottom:15px;">Estimasi Power Serangan: <strong id="deploy-est-power" class="text-red">0 PWR</strong></p>
 
-            <button class="btn btn-red full-btn" onclick="confirmAttackDeployment()">LUNCURKAN SERANGAN (15 MNT)</button>
+            <button class="btn btn-red full-btn" onclick="confirmAttackDeployment()">LUNCURKAN SERANGAN (2 MNT)</button>
             <button class="btn btn-gold full-btn" onclick="closeAttackDeployModal()">BATALKAN</button>
         </div>
     </div>
@@ -110,7 +110,7 @@
         <div class="modal-card border-red">
             <h2 class="text-red">🚨 PERINGATAN DARURAT WAR 🚨</h2>
             <p style="margin-top:10px;" id="pvp-defense-desc">Kota Anda sedang diserang oleh pemain lain!</p>
-            <div class="jail-timer" style="margin: 15px 0;">Pasukan Musuh Tiba Dalam: <strong id="pvp-defense-timer" class="text-yellow">15:00</strong></div>
+            <div class="jail-timer" style="margin: 15px 0;">Pasukan Musuh Tiba Dalam: <strong id="pvp-defense-timer" class="text-yellow">02:00</strong></div>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Kirim pasukan bayaran untuk menambah pertahanan kota sebesar +100 PWR!</p>
             <button class="btn btn-gold full-btn" onclick="hireMercenariesForDefense()">Sewa Pasukan Bayaran (Rp 15 Juta)</button>
             <button class="btn btn-red full-btn" onclick="ignoreDefense()">Pasrah / Biarkan Bertahan Sendiri</button>
@@ -203,12 +203,12 @@
         <div class="modal-card guide-card-wide">
             <h2 class="gold-text">PANDUAN LENGKAP KARTEL MAFIA</h2>
             <div class="guide-content">
-                <h4>1. Invasi Kota AI (15 Menit Perjalanan & Alokasi Pasukan)</h4>
-                <p>Serangan ke wilayah AI membutuhkan alokasi Pasukan & Senjata yang akan pergi dari markas utama selama 15 menit.</p>
+                <h4>1. Invasi Kota (2 Menit Perjalanan)</h4>
+                <p>Serangan ke wilayah AI maupun pemain lain membutuhkan durasi perjalanan 2 menit (120 detik). Pemain hanya bisa menjalankan 1 operasi serangan secara bersamaan.</p>
                 <h4>2. Garnisun Kota & Serangan Balik AI</h4>
-                <p>Simpan Pasukan & Senjata di setiap kota yang Anda kuasai. Rival AI Engine akan menyerang kota Anda secara acak.</p>
-                <h4>3. Koran Berita Nasional (Edisi Tiap 30 Menit)</h4>
-                <p>Koran terus memuat warta berita secara konsisten. Meskipun Anda offline, 10 berita terhangat akan tersaji secara utuh saat Anda kembali login.</p>
+                <p>Simpan Pasukan & Senjata di setiap kota milik Anda. Rival AI secara berkala akan mencoba merebut kembali kota tersebut!</p>
+                <h4>3. Visual Ilustrasi Underworld</h4>
+                <p>Dilengkapi foto ilustrasi visual untuk Rival AI Boss, Bisnis Haram, Aksi Kriminal, Perwira Unik, dan Calon Gubernur Pilkada.</p>
             </div>
             <button class="btn btn-gold full-btn" onclick="toggleGuideModal(false)">TUTUP PANDUAN</button>
         </div>
@@ -290,7 +290,7 @@
                 <section id="tab-map" class="sub-tab-content active">
                     <div class="turf-header">
                         <h3>PETA DOMINASI KARTEL INDONESIA</h3>
-                        <p>Kirim Pasukan & Senjata dari Markas untuk Menginvasi Wilayah AI (15 Menit)!</p>
+                        <p>Warna Area: <span class="text-green">■ Milik Anda</span> | <span class="text-red">■ Mafia AI</span> | <span class="text-blue">■ Pemain Lain</span></p>
                         <div class="province-selector-bar">
                             <label>Pilih Provinsi: </label>
                             <select id="province-view-select" onchange="renderTurfMap()"></select>
@@ -300,14 +300,14 @@
                         <div class="map-grid" id="turf-map-grid"></div>
                     </div>
 
-                    <h4 style="margin-top:25px;">Operasi Perang Berjalan (15 Menit)</h4>
+                    <h4 style="margin-top:25px;">Operasi Perang Berjalan (2 Menit)</h4>
                     <div id="active-ai-attacks-grid" class="card-grid"></div>
                 </section>
 
                 <!-- Tab: Garnisun Kota -->
                 <section id="tab-garrison" class="sub-tab-content">
                     <h3>🛡️ MANAJEMEN GARNISUN KOTA</h3>
-                    <p>Atur penempatan pasukan & senjata di setiap kota milik Anda untuk menahan serangan Rival AI!</p>
+                    <p>Atur penempatan pasukan & senjata di setiap kota milik Anda untuk menahan serangan balik Rival AI!</p>
                     <div class="card-grid" id="garrison-cities-grid"></div>
                 </section>
 
@@ -379,7 +379,7 @@
                 <!-- Tab: Rival AI Boss Engine -->
                 <section id="tab-rivals" class="sub-tab-content">
                     <h3>🕵️ PERANG INTELIJEN & RIVAL AI BOSS ENGINE</h3>
-                    <p>3 Bos Kartel AI yang bergerak aktif di Indonesia. Level & Power mereka berubah tiap 30 menit!</p>
+                    <p>3 Bos Kartel AI yang bergerak aktif. Gunakan Sadap Intelejen untuk menguak Power Asli mereka!</p>
                     <div class="card-grid" id="ai-boss-list-grid"></div>
                 </section>
             </div>
