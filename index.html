@@ -18,14 +18,14 @@
         </div>
     </div>
 
-    <!-- Modal Peringatan Serangan Real-Time PvP (Untuk Pemain Pertahanan) -->
+    <!-- Modal Peringatan Serangan Real-Time PvP -->
     <div id="pvp-defense-modal" class="modal-overlay hidden" style="z-index: 15000;">
         <div class="modal-card border-red">
             <h2 class="text-red">🚨 PERINGATAN DARURAT WAR 🚨</h2>
             <p style="margin-top:10px;" id="pvp-defense-desc">Kota Anda sedang diserang oleh pemain lain!</p>
             <div class="jail-timer" style="margin: 15px 0;">Pasukan Musuh Tiba Dalam: <strong id="pvp-defense-timer" class="text-yellow">15:00</strong></div>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Kirim pasukan bayaran untuk menambah pertahanan kota sebesar +100 PWR!</p>
-            <button class="btn btn-gold full-btn" onclick="hireMercenariesForDefense()">Sewa Pasukan Bayaran (Rp 25 Juta)</button>
+            <button class="btn btn-gold full-btn" onclick="hireMercenariesForDefense()">Sewa Pasukan Bayaran (Rp 15 Juta)</button>
             <button class="btn btn-red full-btn" onclick="ignoreDefense()">Pasrah / Biarkan Bertahan Sendiri</button>
         </div>
     </div>
@@ -87,7 +87,7 @@
         </div>
     </div>
 
-    <!-- Modal Penjara Pemain & Mini Game Sekering Listrik -->
+    <!-- Modal Penjara Pemain & Mini Game Sekering Listrik (Fixed UI) -->
     <div id="jail-modal" class="modal-overlay hidden">
         <div class="modal-card event-card border-red" style="max-width: 520px;">
             <div class="event-img-banner">⛓️</div>
@@ -97,15 +97,16 @@
             
             <div class="jail-subpanel" style="margin: 15px 0; border: 1px dashed var(--gold); padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.5);">
                 <h4 class="gold-text">⚡ MINI GAME: RETAS PANEL SEKERING SEL</h4>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">Abaikan daya saklar sel! Tekan urutan saklar yang menyala untuk mematikan listrik tahanan & memotong hukuman 30 detik!</p>
-                <div id="jail-minigame-grid" style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;"></div>
-                <small id="jail-minigame-status" class="text-yellow" style="display: block; margin-top: 8px; font-weight:700;"></small>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">Tekan urutan tombol saklar sesuai urutan kode yang ditampilkan untuk memotong hukuman 30 detik!</p>
+                <div id="jail-minigame-sequence-display" class="text-yellow" style="font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; margin-bottom: 10px;">KODE: [ ? - ? - ? ]</div>
+                <div id="jail-minigame-grid" style="display: flex; justify-content: center; gap: 10px;"></div>
+                <small id="jail-minigame-status" class="text-green" style="display: block; margin-top: 8px; font-weight:700;"></small>
             </div>
 
             <div class="jail-actions">
-                <button class="btn btn-gold full-btn" onclick="jailBribe100()">Suap 100% Bebas (Rp 50 Juta)</button>
-                <button class="btn btn-blue full-btn" onclick="jailLawyer()">Sewa Pengacara (Rp 15 Juta)</button>
-                <button class="btn btn-red full-btn" onclick="jailBreakout()">Serbu Penjara (Rp 5 Juta)</button>
+                <button class="btn btn-gold full-btn" onclick="jailBribe100()">Suap 100% Bebas (Rp 25 Juta)</button>
+                <button class="btn btn-blue full-btn" onclick="jailLawyer()">Sewa Pengacara (Rp 8 Juta)</button>
+                <button class="btn btn-red full-btn" onclick="jailBreakout()">Serbu Penjara (Rp 3 Juta)</button>
             </div>
         </div>
     </div>
@@ -116,9 +117,9 @@
             <h2 class="gold-text">PANDUAN LENGKAP KARTEL MAFIA</h2>
             <div class="guide-content">
                 <h4>1. Perang PvP 15 Menit & Pasukan Bayaran</h4>
-                <p>Serangan ke wilayah pemain lain membutuhkan proses perjalanan pasukan selama 15 menit. Korban (bahkan jika baru login) akan langsung menerima notifikasi untuk menyewa pasukan bayaran demi memperkuat pertahanan.</p>
+                <p>Serangan ke wilayah pemain lain membutuhkan proses perjalanan pasukan selama 15 menit. Korban akan menerima notifikasi real-time untuk menyewa pasukan bayaran demi memperkuat pertahanan.</p>
                 <h4>2. Penjara Escalating & Mini Game</h4>
-                <p>Durasi dasar penjara adalah 2 menit dan dikali 1.5x setiap kali Anda ditangkap. Mainkan mini game sekering listrik di dalam sel untuk memotong masa tahanan!</p>
+                <p>Durasi dasar penjara adalah 2 menit dan dikali 1.5x setiap kali Anda ditangkap. Mainkan mini game sekering listrik di dalam sel untuk memotong masa tahanan secara instan!</p>
                 <h4>3. Beking Politik & Pilkada</h4>
                 <p>Suntik modal ke Paslon Pilihan dalam Pilkada 3 harian. Menangkan calon untuk mendapatkan hak istimewa perlindungan daerah dan pembagian kas!</p>
             </div>
@@ -287,8 +288,8 @@
                 <div class="recruitment-banner">
                     <h4>Perekrutan Pasukan</h4>
                     <div class="recruit-controls">
-                        <button class="btn btn-gold" onclick="buyMember()">Rekrut Pasukan (+1, Power 1-5) - Rp 2.500.000</button>
-                        <button class="btn btn-red" onclick="buyWeapon()">Beli Senjata (+1, +25 PWR) - Rp 10.000.000</button>
+                        <button class="btn btn-gold" onclick="buyMember()">Rekrut Pasukan (+1, Power 1-5) - Rp 1.500.000</button>
+                        <button class="btn btn-red" onclick="buyWeapon()">Beli Senjata (+1, +25 PWR) - Rp 6.000.000</button>
                     </div>
                 </div>
                 <h4 style="margin-top:20px;">Daftar Pasukan Aktif</h4>
@@ -325,11 +326,11 @@
                 <div class="loan-container">
                     <div class="loan-card">
                         <h4>Bakti Sosial Ormas</h4>
-                        <button class="btn btn-green full-btn" onclick="donateOrmas()">Donasi (Rp 15 Juta) -> Heat -15%</button>
+                        <button class="btn btn-green full-btn" onclick="donateOrmas()">Donasi (Rp 15 Juta) -> Heat -10%</button>
                     </div>
                     <div class="loan-card">
                         <h4>Suap Oknum Aparat</h4>
-                        <button class="btn btn-blue full-btn" onclick="bribePolice()">Suap Polda (Rp 40 Juta) -> Heat -25%</button>
+                        <button class="btn btn-blue full-btn" onclick="bribePolice()">Suap Polda (Rp 25 Juta) -> Heat -30%</button>
                     </div>
                 </div>
             </section>
