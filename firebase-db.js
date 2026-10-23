@@ -52,7 +52,12 @@ export async function updateCityOccupantGlobal(cityName, uid, username) {
         const snap = await getDoc(ref);
         let map = snap.exists() ? (snap.data().map || {}) : {};
 
-        map[cityName] = { uid, username };
+        if (uid) {
+            map[cityName] = { uid, username };
+        } else {
+            delete map[cityName]; // Kembalikan ke AI
+        }
+
         await setDoc(ref, { map }, { merge: true });
         return { success: true };
     } catch (err) {
@@ -133,5 +138,26 @@ export async function saveGlobalPilkadaData(pilkadaState) {
         await setDoc(doc(db, "meta", "pilkada"), pilkadaState, { merge: true });
     } catch (err) {
         console.error("Save pilkada error:", err);
+    }
+}
+
+export async function fetchNationalNewsData() {
+    try {
+        const snap = await getDoc(doc(db, "meta", "newspaper"));
+        if (snap.exists()) return snap.data().feed || [];
+        return [];
+    } catch (err) {
+        console.error("Fetch news error:", err);
+        return [];
+    }
+}
+
+export async function saveNationalNewsData(feedArray) {
+    try {
+        // Simpan Maksimal 10 Berita Terbaru
+        const trimmedFeed = feedArray.slice(0, 10);
+        await setDoc(doc(db, "meta", "newspaper"), { feed: trimmedFeed }, { merge: true });
+    } catch (err) {
+        console.error("Save news error:", err);
     }
 }
