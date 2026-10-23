@@ -74,30 +74,39 @@ body { background-color: var(--bg-dark); color: var(--text-light); min-height: 1
 .progress-bg { background: #222; height: 6px; border-radius: 3px; margin: 5px 0; overflow: hidden; }
 .progress-fill { background: var(--red); height: 100%; width: 0%; transition: width 0.3s; }
 
-/* NAV TABS */
+/* NAV TABS CATEGORY & SUB NAV */
 .nav-tabs { display: flex; background: #13151d; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
 .nav-btn { padding: 14px 20px; background: transparent; border: none; color: var(--text-muted); font-weight: 700; cursor: pointer; white-space: nowrap; }
 .nav-btn.active { color: var(--gold); border-bottom: 3px solid var(--gold); background: rgba(223, 168, 55, 0.05); }
 
-/* CONTENT */
+.sub-nav-bar { display: flex; background: #090a0e; border-bottom: 1px solid var(--border-color); padding: 8px 20px; gap: 10px; overflow-x: auto; }
+.sub-nav-btn { background: #161820; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.sub-nav-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+/* CONTENT GROUPS & TABS */
 .content-body { padding: 20px; min-height: 380px; }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
+.category-group { display: none; }
+.category-group.active { display: block; }
+.sub-tab-content { display: none; }
+.sub-tab-content.active { display: block; }
+
+/* KORAN BERITA NASIONAL */
+.newspaper-container { background: #12141c; border: 2px solid var(--gold); border-radius: 8px; padding: 20px; max-height: 450px; overflow-y: auto; }
+.news-item { border-bottom: 1px dashed var(--border-color); padding-bottom: 12px; margin-bottom: 12px; }
+.news-item:last-child { border-bottom: none; margin-bottom: 0; }
+.news-item h5 { color: var(--gold); font-size: 1rem; font-family: 'Cinzel', serif; margin-bottom: 4px; }
+.news-item small { color: var(--text-muted); font-size: 0.75rem; }
+.news-item p { font-size: 0.88rem; color: #cbd5e1; margin-top: 4px; }
 
 /* LEADERBOARD TABLE */
-.leaderboard-table-container {
-    background: #090a0d; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-top: 15px; overflow-x: auto;
-}
+.leaderboard-table-container { background: #090a0d; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-top: 15px; overflow-x: auto; }
 .leaderboard-table { width: 100%; border-collapse: collapse; text-align: left; }
 .leaderboard-table th, .leaderboard-table td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
 .leaderboard-table th { background: #11131a; color: var(--gold); font-family: 'Cinzel', serif; }
 .leaderboard-table tr:hover { background: rgba(223, 168, 55, 0.05); }
 
 /* STICKY ASSISTANT */
-.assistant-card-sticky {
-    background: #12141d; border-top: 1px solid var(--gold); border-bottom: 1px solid var(--border-color);
-    padding: 12px 20px; display: flex; align-items: center; gap: 15px;
-}
+.assistant-card-sticky { background: #12141d; border-top: 1px solid var(--gold); border-bottom: 1px solid var(--border-color); padding: 12px 20px; display: flex; align-items: center; gap: 15px; }
 .assistant-avatar { font-size: 2rem; background: #0a0b0e; padding: 10px; border-radius: 50%; border: 1px solid var(--border-color); }
 .assistant-speech h4 { color: var(--gold); font-size: 1rem; }
 .assistant-speech p { font-style: italic; color: var(--text-light); font-size: 0.85rem; margin-top: 2px; }
