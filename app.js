@@ -204,7 +204,10 @@ let activeCategory = 'domain';
 
 // INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('auth-modal').classList.remove('hidden');
+    // Tampilkan modal auth saat pertama kali dibuka
+    const authModal = document.getElementById('auth-modal');
+    if (authModal) authModal.classList.remove('hidden');
+
     document.getElementById('game-container').classList.add('hidden');
     document.getElementById('setup-modal').classList.add('hidden');
 
