@@ -9,6 +9,8 @@ import {
     fetchLeaderboardData,
     fetchGlobalPilkadaData,
     saveGlobalPilkadaData,
+    fetchNationalNewsData,
+    saveNationalNewsData,
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
     signOut, 
@@ -18,7 +20,6 @@ import {
 import { 
     PROVINCES, 
     GLOBAL_TARGETS, 
-    RIVAL_NAMES, 
     CRIMES_DATA, 
     BUSINESS_DATA, 
     ALL_EXPEDITION_MASTER, 
@@ -28,89 +29,55 @@ import {
 
 // WEB AUDIO SYNTHESIZER
 class AudioSynth {
-    constructor() {
-        this.ctx = null;
-    }
-
-    init() {
-        if (!this.ctx) {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-    }
-
+    constructor() { this.ctx = null; }
+    init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
     playSuccess() {
-        this.init();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(523.25, now);
-        osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.3);
+        this.init(); if (!this.ctx) return;
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.3);
     }
-
     playDanger() {
-        this.init();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(180, now);
-        osc.frequency.setValueAtTime(110, now + 0.15);
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.35);
+        this.init(); if (!this.ctx) return;
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, now); osc.frequency.setValueAtTime(110, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.35);
     }
-
     playSiren() {
-        this.init();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.linearRampToValueAtTime(900, now + 0.25);
-        osc.frequency.linearRampToValueAtTime(600, now + 0.5);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.6);
+        this.init(); if (!this.ctx) return;
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.linearRampToValueAtTime(900, now + 0.25);
+        osc.frequency.linearRampToValueAtTime(600, now + 0.5); gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.6);
     }
-
     playWarDrum() {
-        this.init();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(100, now);
-        osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
-        gain.gain.setValueAtTime(0.5, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.4);
+        this.init(); if (!this.ctx) return;
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
+        gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.4);
     }
 }
 
 const audioFX = new AudioSynth();
 
-// FIX 1: Kosongkan array members agar Power tidak bertambah sendiri saat login
+// MASTER CONTRACTS MISI & STORY
+const STORY_CONTRACTS_MASTER = [
+    { id: 'c1', title: 'Operasi Bersihkan Pelabuhan', desc: 'Kuasai minimal 3 kota di Indonesia untuk mengamankan jalur pelabuhan.', reqCities: 3, rewardCash: 15000000, rewardRep: 50 },
+    { id: 'c2', title: 'Garda Persenjataan Kartel', desc: 'Miliki minimal 3 Senjata dan 5 Pasukan Aktif di Markas.', reqWeapons: 3, reqMembers: 5, rewardCash: 25000000, rewardRep: 100 },
+    { id: 'c3', title: 'Beking Politik Daerah', desc: 'Suntik modal Pilkada minimal Rp 10 Juta untuk paslon mana pun.', reqPilkadaContrib: 10000000, rewardCash: 35000000, rewardRep: 150 },
+    { id: 'c4', title: 'Dominasi Nusantara', desc: 'Kuasai minimal 10 kota dan miliki total power di atas 500 PWR.', reqCities: 10, reqPwr: 500, rewardCash: 100000000, rewardRep: 300 }
+];
+
+// MASTER RIVAL AI BOSS ENGINE
+let aiRivalBosses = [
+    { id: 'pantura', name: 'Geng Pantura (Sutrisno)', level: 3, pwr: 250, desc: 'Menguasai jalur logistik pesisir utara.' },
+    { id: 'belawan', name: 'Sindikat Belawan (Bakar)', level: 4, pwr: 400, desc: 'Penyelundup senjata tajam & gelap Sumatra.' },
+    { id: 'celebes', name: 'Kartel Celebes (Daeng Rawa)', level: 5, pwr: 650, desc: 'Jaringan perdagangan komoditas rahasia timur.' }
+];
+
 function createDefaultGameState() {
     return {
         setupDone: false,
@@ -120,11 +87,13 @@ function createDefaultGameState() {
         money: 5000000,
         weapons: 0,
         heat: 0,
+        reputation: 0,
         isJailed: false,
         jailTimerSec: 0,
         jailTimesCount: 0,
-        members: [], // Kosongkan agar murni dibaca dari data cloud
+        members: [],
         jailedMembers: [],
+        cityGarrisons: {}, // { "Jakarta Pusat": { members: [...], weapons: 2 } }
         officers: {},
         businesses: {},
         controlledCities: {},
@@ -132,8 +101,10 @@ function createDefaultGameState() {
         activeExpedition: null,
         availableExpeditions: [],
         activeCrime: null,
+        activeAiAttacks: [], // Hanya 1 penyerangan 15 menit
         activePvPWars: [],
         incomingPvPAttack: [],
+        completedContracts: {},
         expeditionCountToday: 0,
         lastExpeditionDate: '',
         peaceShieldUntil: 0,
@@ -149,6 +120,8 @@ let payoutCountdownSec = 60;
 let currentActiveEvent = null;
 let eventTimerSec = 20;
 let globalOccupiedMap = {};
+let nationalNewsFeed = [];
+let newsUpdateTickerSec = 3600; // 1 Jam (3600s)
 
 let globalPilkada = {
     phase: 'KAMPANYE',
@@ -164,6 +137,38 @@ let globalPilkada = {
 
 let jailMiniGamePattern = [];
 let jailMiniGameUserIdx = 0;
+let pendingAttackCityTarget = null;
+let currentGarrisonCityTarget = null;
+
+// SUB NAV CONFIG MAP
+const CATEGORY_SUB_NAVS = {
+    domain: [
+        { id: 'tab-map', label: '🗺️ Peta MMO' },
+        { id: 'tab-garrison', label: '🛡️ Garnisun Kota' },
+        { id: 'tab-global', label: '✈️ Internasional' }
+    ],
+    business: [
+        { id: 'tab-biz', label: '🏢 Bisnis Haram' },
+        { id: 'tab-expedition', label: '🚚 Ekspedisi' },
+        { id: 'tab-crimes', label: '🔪 Aksi Kriminal' }
+    ],
+    military: [
+        { id: 'tab-troops', label: '⚔️ Pasukan Markas' },
+        { id: 'tab-officers', label: '🎖️ Perwira' },
+        { id: 'tab-rivals', label: '🕵️ Rival AI Boss' }
+    ],
+    politics: [
+        { id: 'tab-news', label: '📰 Koran Berita' },
+        { id: 'tab-pilkada', label: '🏛️ Beking Pilkada' },
+        { id: 'tab-social', label: '🤝 Ormas & Suap' }
+    ],
+    contracts: [
+        { id: 'tab-bounty', label: '📜 Misi Cerita' },
+        { id: 'tab-leaderboard', label: '🏆 Leaderboard' }
+    ]
+};
+
+let activeCategory = 'domain';
 
 // INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
@@ -188,6 +193,7 @@ function setupAuthListeners() {
             currentUser = user;
             gameState = createDefaultGameState();
             globalOccupiedMap = await fetchGlobalOccupiedCities();
+            nationalNewsFeed = await fetchNationalNewsData();
 
             document.getElementById('auth-modal').classList.add('hidden');
             const cloudData = await loadUserDataFromCloud(user.uid);
@@ -198,12 +204,24 @@ function setupAuthListeners() {
             const cloudPilkada = await fetchGlobalPilkadaData();
             if (cloudPilkada) globalPilkada = cloudPilkada;
 
+            // Offline Recovery untuk Timer
+            const now = Date.now();
+            if (gameState.activeAiAttacks) {
+                gameState.activeAiAttacks.forEach(atk => {
+                    if (now >= atk.endTime) {
+                        gameState.controlledCities[atk.cityName] = true;
+                    }
+                });
+                gameState.activeAiAttacks = gameState.activeAiAttacks.filter(atk => now < atk.endTime);
+            }
+
             if (!gameState.setupDone) {
                 document.getElementById('setup-modal').classList.remove('hidden');
                 document.getElementById('game-container').classList.add('hidden');
             } else {
                 document.getElementById('setup-modal').classList.add('hidden');
                 document.getElementById('game-container').classList.remove('hidden');
+                switchCategory('domain');
                 initUI();
                 renderLogs();
 
@@ -262,11 +280,63 @@ window.handleAuthSubmit = async function(e) {
     }
 };
 
-window.logout = function() { 
-    signOut(auth).catch((err) => console.error("SignOut error:", err)); 
+window.logout = function() { signOut(auth).catch((err) => console.error("SignOut error:", err)); };
+
+// NAVIGASI KATEGORI & SUB TAB
+window.switchCategory = function(catKey) {
+    activeCategory = catKey;
+    document.querySelectorAll('.category-group').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(`cat-${catKey}`).classList.add('active');
+    
+    // Highlight Nav Main
+    const navBtnIndex = ['domain', 'business', 'military', 'politics', 'contracts'].indexOf(catKey);
+    const navBtns = document.querySelectorAll('.nav-btn');
+    if (navBtns[navBtnIndex]) navBtns[navBtnIndex].classList.add('active');
+
+    renderSubNavBar(catKey);
 };
 
-// SETUP BASECAMP MULTIPLAYER
+function renderSubNavBar(catKey) {
+    const container = document.getElementById('sub-nav-bar');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const subTabs = CATEGORY_SUB_NAVS[catKey] || [];
+    subTabs.forEach((st, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `sub-nav-btn ${idx === 0 ? 'active' : ''}`;
+        btn.innerText = st.label;
+        btn.onclick = () => switchSubTab(catKey, st.id, btn);
+        container.appendChild(btn);
+    });
+
+    if (subTabs.length > 0) {
+        switchSubTab(catKey, subTabs[0].id, container.children[0]);
+    }
+}
+
+function switchSubTab(catKey, subTabId, btnEl) {
+    const parentGroup = document.getElementById(`cat-${catKey}`);
+    if (!parentGroup) return;
+
+    parentGroup.querySelectorAll('.sub-tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sub-nav-btn').forEach(el => el.classList.remove('active'));
+
+    const targetSubTab = document.getElementById(subTabId);
+    if (targetSubTab) targetSubTab.classList.add('active');
+    if (btnEl) btnEl.classList.add('active');
+
+    if (subTabId === 'tab-leaderboard') renderLeaderboard();
+    if (subTabId === 'tab-pilkada') renderPilkadaUI();
+    if (subTabId === 'tab-news') renderNationalNewspaper();
+    if (subTabId === 'tab-bounty') renderContractsUI();
+    if (subTabId === 'tab-garrison') renderGarrisonCitiesGrid();
+    if (subTabId === 'tab-rivals') renderAiBossList();
+}
+
+// SETUP BASECAMP
 async function populateSetupSelects() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const pSelect = document.getElementById('setup-province-select');
@@ -321,7 +391,7 @@ window.submitInitialSetup = async function() {
     gameState.controlledCities = {};
     gameState.controlledCities[cName] = true;
 
-    // Pasukan awal hanya diberikan 2 orang saat PERTAMA KALI mendaftar
+    // Default Pasukan Awal
     gameState.members = [
         { id: Date.now() + 1, power: Math.floor(Math.random() * 5) + 1 },
         { id: Date.now() + 2, power: Math.floor(Math.random() * 5) + 1 }
@@ -346,6 +416,7 @@ async function cloudAutosaveInterval() {
 function secondTicker() {
     if (!currentUser || !gameState.setupDone) return;
 
+    // Red Zone Lockdown Overlay
     const lockOverlay = document.getElementById('lockdown-overlay');
     if (gameState.isBusinessClosedTimer > 0) {
         gameState.isBusinessClosedTimer--;
@@ -379,12 +450,21 @@ function secondTicker() {
         }
     }
 
+    // Koran Update Ticker (1 Jam sekali)
+    newsUpdateTickerSec--;
+    if (newsUpdateTickerSec <= 0) {
+        newsUpdateTickerSec = 3600;
+        triggerHourlyNewsAndAiUpdate();
+    }
+
     jailTicker();
     expeditionTicker();
     crimeSingleTicker();
     eventModalTimerTicker();
+    aiAttacksTicker();
     pvpWarsTicker();
     pilkadaTicker();
+    randomAiRetaliationCheck();
     updateUI();
 }
 
@@ -398,7 +478,12 @@ function calculateTotalIncome1Min() {
     if (globalPilkada.winnerId === 3) income *= 1.25;
 
     const controlledCount = Object.keys(gameState.controlledCities).length;
-    income += controlledCount * 1000000;
+    let cityBaseIncome = controlledCount * 1000000;
+
+    // Pemotongan 50% Pendapatan Kota jika dalam Status Buronan Red Zone (Heat 70%+)
+    if (gameState.heat >= 70) cityBaseIncome *= 0.5;
+
+    income += cityBaseIncome;
 
     GLOBAL_TARGETS.forEach(g => {
         if (gameState.controlledGlobal[g.id]) income += g.rewardPerMin;
@@ -406,9 +491,8 @@ function calculateTotalIncome1Min() {
     return income;
 }
 
-// REBALANCING 2: Biaya Upah Anak Buah Di-rasionalkan jadi Rp 50.000 / mnt
 function calculateTotalExpenses1Min() {
-    let baseExpense = gameState.members.length * 50000;
+    let baseExpense = (gameState.members || []).length * 50000;
     if (gameState.officers['bambang_lintah']) baseExpense *= 0.8;
     return baseExpense;
 }
@@ -419,10 +503,17 @@ function getPlayerTotalPower() {
     return pwr;
 }
 
+function getCityGarrisonPower(cityName) {
+    const gar = (gameState.cityGarrisons && gameState.cityGarrisons[cityName]) ? gameState.cityGarrisons[cityName] : null;
+    if (!gar) return 0;
+    let pwr = (gar.weapons || 0) * 25;
+    (gar.members || []).forEach(m => pwr += (m.power || 0));
+    return pwr;
+}
+
 function getNextJailDurationSec() {
     const times = gameState.jailTimesCount || 0;
-    const baseSec = 120;
-    return Math.floor(baseSec * Math.pow(1.5, times));
+    return Math.floor(120 * Math.pow(1.5, times));
 }
 
 function checkAllIndoAICleared() {
@@ -441,6 +532,10 @@ function initUI() {
     renderGlobalTargets();
     renderLeaderboard();
     renderPilkadaUI();
+    renderNationalNewspaper();
+    renderContractsUI();
+    renderGarrisonCitiesGrid();
+    renderAiBossList();
     updateUI();
 }
 
@@ -451,6 +546,7 @@ async function updateUI() {
 
     document.getElementById('user-display-name').innerText = gameState.username;
     document.getElementById('player-location-badge').innerText = `Basecamp: ${gameState.homeCity}`;
+    document.getElementById('player-rep-badge').innerText = `Reputasi: ${gameState.reputation || 0} REP`;
 
     const totalCities = Object.keys(gameState.controlledCities).length;
     const myPwr = getPlayerTotalPower();
@@ -460,7 +556,7 @@ async function updateUI() {
     else if (myPwr >= 450 && totalCities >= 6) rankTitle = "Bos Ormas Wilayah";
     else if (myPwr >= 150) rankTitle = "Kepala Keamanan Daerah";
 
-    document.getElementById('player-title').innerText = rankTitle;
+    document.getElementById('player-title').innerText = `${rankTitle} ℹ️`;
 
     const income = calculateTotalIncome1Min();
     const expenses = calculateTotalExpenses1Min();
@@ -469,11 +565,17 @@ async function updateUI() {
     document.getElementById('stat-money').innerText = `Rp ${gameState.money.toLocaleString('id-ID')}`;
     document.getElementById('stat-income').innerText = `+Rp ${income.toLocaleString('id-ID')}`;
     document.getElementById('stat-expenses').innerText = `-Rp ${expenses.toLocaleString('id-ID')}`;
-    document.getElementById('stat-members').innerText = `${gameState.members.length} Orang`;
+    document.getElementById('stat-members').innerText = `${(gameState.members || []).length} Orang`;
     document.getElementById('stat-power').innerText = `${myPwr} PWR`;
-    document.getElementById('stat-next-jail').innerText = `${(nextJailSec/60).toFixed(1)} mnt`;
-    document.getElementById('stat-heat').innerText = `${gameState.heat}%`;
-    document.getElementById('heat-bar').style.width = `${gameState.heat}%`;
+
+    // Status Heat Dynamic
+    const heatVal = gameState.heat || 0;
+    let heatText = `${heatVal}% (Aman)`;
+    if (heatVal >= 70) heatText = `${heatVal}% 🚨 BURONAN POLDA`;
+    else if (heatVal >= 40) heatText = `${heatVal}% ⚠️ WASPADA`;
+
+    document.getElementById('stat-heat').innerText = heatText;
+    document.getElementById('heat-bar').style.width = `${heatVal}%`;
 
     renderTurfMap();
     renderMembersList();
@@ -486,42 +588,280 @@ function setAssistantMessage(msg) {
     if (el) el.innerText = `"${msg}"`;
 }
 
-window.switchTab = function(tabId) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    if (event && event.target) event.target.classList.add('active');
+// 📰 KORAN BERITA NASIONAL & AI BOSS UPDATE (TIAP 1 JAM / MAKS 10 BERITA)
+async function triggerHourlyNewsAndAiUpdate() {
+    // 1. Randomize Power AI Boss
+    aiRivalBosses.forEach(b => {
+        const delta = Math.floor(Math.random() * 80) - 35; // -35 s/d +45 PWR
+        b.pwr = Math.max(100, b.pwr + delta);
+        if (b.pwr > 1000) b.level = 6;
+        else if (b.pwr > 600) b.level = 5;
+        else if (b.pwr > 350) b.level = 4;
+        else b.level = 3;
+    });
 
-    if (tabId === 'leaderboard-tab') renderLeaderboard();
-    if (tabId === 'politics-tab') renderPilkadaUI();
-};
+    // 2. Buat Berita Baru
+    const sampleHeadlineNews = [
+        `🚨 RAZIA GABUNGAN: Polda menyita aset senilai miliaran rupiah dari kartel liar di kawasan pelabuhan.`,
+        `📈 BURSA GELAP: Fluktuasi pasokan senjata impor membuat harga pasar gelap melonjak pesat!`,
+        `⚔️ BENTROK RIVAL: ${aiRivalBosses[Math.floor(Math.random()*aiRivalBosses.length)].name} dilaporkan merebut wilayah baru! Total Power kini ${aiRivalBosses[0].pwr} PWR.`,
+        `🏛️ HOT PILKADA: Modal politik dari bos kartel anonim mendominasi elektabilitas suara daerah.`,
+        `🚚 DISERGAP: Armada penyelundupan rokok ilegal berhasil digagalkan Tim Bea Cukai.`
+    ];
 
-async function renderLeaderboard() {
-    const tbody = document.getElementById('leaderboard-body');
-    if (!tbody) return;
+    const chosenNews = sampleHeadlineNews[Math.floor(Math.random() * sampleHeadlineNews.length)];
+    const newEntry = {
+        title: "KORAN WARTA UNDERWORLD NASIONAL",
+        time: new Date().toLocaleTimeString(),
+        desc: chosenNews
+    };
 
-    const players = await fetchLeaderboardData();
-    if (players.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada data pemain lain.</td></tr>';
+    nationalNewsFeed.unshift(newEntry);
+    if (nationalNewsFeed.length > 10) nationalNewsFeed = nationalNewsFeed.slice(0, 10);
+
+    await saveNationalNewsData(nationalNewsFeed);
+    renderNationalNewspaper();
+    renderAiBossList();
+}
+
+function renderNationalNewspaper() {
+    const container = document.getElementById('national-newspaper-feed');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!nationalNewsFeed || nationalNewsFeed.length === 0) {
+        container.innerHTML = '<p class="text-muted">Belum ada koran terbit. Menunggu warta terkini...</p>';
         return;
     }
 
-    tbody.innerHTML = '';
-    players.forEach((p, idx) => {
-        const tr = document.createElement('tr');
-        if (p.uid === currentUser.uid) tr.style.background = 'rgba(223, 168, 55, 0.15)';
-
-        tr.innerHTML = `
-            <td>#${idx + 1}</td>
-            <td><strong>${p.username}</strong> ${p.uid === currentUser.uid ? '<span class="text-yellow">(Anda)</span>' : ''}</td>
-            <td class="text-blue">${p.cities} Kota</td>
-            <td class="text-green">Rp ${p.money.toLocaleString('id-ID')}</td>
+    nationalNewsFeed.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'news-item';
+        div.innerHTML = `
+            <h5>#${idx+1} ${item.title}</h5>
+            <small>Dipublikasikan Pukul: ${item.time}</small>
+            <p>${item.desc}</p>
         `;
-        tbody.appendChild(tr);
+        container.appendChild(div);
     });
 }
 
-// PETA WILAYAH
+function renderAiBossList() {
+    const grid = document.getElementById('ai-boss-list-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    aiRivalBosses.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'game-card controlled-enemy';
+        card.innerHTML = `
+            <div>
+                <h4>${b.name} <span class="text-yellow">[Lvl ${b.level}]</span></h4>
+                <p>${b.desc}</p>
+                <p>Estimasi Power AI: <strong class="text-red">${b.pwr} PWR</strong></p>
+            </div>
+            <button class="btn btn-blue btn-xs" onclick="sadapAiBoss('${b.id}')">SADAP INTELIJEN (Rp 5Jt)</button>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+window.sadapAiBoss = function(bossId) {
+    if (gameState.money >= 5000000) {
+        audioFX.playSuccess();
+        gameState.money -= 5000000;
+        const b = aiRivalBosses.find(x => x.id === bossId);
+        alert(`INTELIJEN TERBUNGKUS: ${b.name} saat ini memiliki ${b.pwr} PWR. Mereka berencana memuat pasokan senjata dalam waktu dekat!`);
+        logMessage(`Berhasil menyadap intelijen ${b.name}.`, 'success');
+        updateUI();
+    } else alert("Uang kas tidak cukup!");
+};
+
+// 🛡️ GARNISUN KOTA & SERANGAN BALIK AI
+function renderGarrisonCitiesGrid() {
+    const grid = document.getElementById('garrison-cities-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const myCities = Object.keys(gameState.controlledCities || {});
+    if (myCities.length === 0) {
+        grid.innerHTML = '<p class="text-muted">Anda belum menguasai kota mana pun.</p>';
+        return;
+    }
+
+    myCities.forEach(cName => {
+        const gar = gameState.cityGarrisons[cName] || { members: [], weapons: 0 };
+        const garPwr = getCityGarrisonPower(cName);
+
+        const card = document.createElement('div');
+        card.className = 'game-card controlled-player';
+        card.innerHTML = `
+            <div>
+                <h4>${cName}</h4>
+                <p>Pasukan Garnisun: <strong>${gar.members.length} Orang</strong></p>
+                <p>Senjata Garnisun: <strong>${gar.weapons} Unit</strong></p>
+                <p>Total Power Pertahanan: <strong class="text-green">${garPwr} PWR</strong></p>
+            </div>
+            <button class="btn btn-gold btn-xs" onclick="openGarrisonModal('${cName}')">Kelola Garnisun Kota</button>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+window.openGarrisonModal = function(cityName) {
+    currentGarrisonCityTarget = cityName;
+    const modal = document.getElementById('garrison-modal');
+    if (!modal) return;
+
+    if (!gameState.cityGarrisons[cityName]) {
+        gameState.cityGarrisons[cityName] = { members: [], weapons: 0 };
+    }
+
+    document.getElementById('garrison-city-title').innerText = `Kota: ${cityName}`;
+    updateGarrisonModalUI();
+    modal.classList.remove('hidden');
+};
+
+function updateGarrisonModalUI() {
+    if (!currentGarrisonCityTarget) return;
+    const gar = gameState.cityGarrisons[currentGarrisonCityTarget];
+    const garPwr = getCityGarrisonPower(currentGarrisonCityTarget);
+
+    document.getElementById('garrison-current-members').innerText = `${gar.members.length} Orang`;
+    document.getElementById('garrison-current-weapons').innerText = `${gar.weapons} Unit`;
+    document.getElementById('garrison-current-pwr').innerText = `${garPwr} PWR`;
+
+    document.getElementById('garrison-base-members').innerText = (gameState.members || []).length;
+    document.getElementById('garrison-base-weapons').innerText = gameState.weapons || 0;
+}
+
+window.transferGarrisonMember = function(action) {
+    if (!currentGarrisonCityTarget) return;
+    const gar = gameState.cityGarrisons[currentGarrisonCityTarget];
+    const count = parseInt(document.getElementById('garrison-input-members').value) || 0;
+    if (count <= 0) return;
+
+    if (action === 'add') {
+        if ((gameState.members || []).length < count) { alert("Pasukan di Markas tidak cukup!"); return; }
+        for (let i = 0; i < count; i++) {
+            const m = gameState.members.pop();
+            gar.members.push(m);
+        }
+    } else {
+        if (gar.members.length < count) { alert("Pasukan di Garnisun tidak cukup!"); return; }
+        for (let i = 0; i < count; i++) {
+            const m = gar.members.pop();
+            gameState.members.push(m);
+        }
+    }
+    audioFX.playSuccess();
+    updateGarrisonModalUI();
+    renderGarrisonCitiesGrid();
+    updateUI();
+};
+
+window.transferGarrisonWeapon = function(action) {
+    if (!currentGarrisonCityTarget) return;
+    const gar = gameState.cityGarrisons[currentGarrisonCityTarget];
+    const count = parseInt(document.getElementById('garrison-input-weapons').value) || 0;
+    if (count <= 0) return;
+
+    if (action === 'add') {
+        if ((gameState.weapons || 0) < count) { alert("Senjata di Markas tidak cukup!"); return; }
+        gameState.weapons -= count;
+        gar.weapons += count;
+    } else {
+        if (gar.weapons < count) { alert("Senjata di Garnisun tidak cukup!"); return; }
+        gar.weapons -= count;
+        gameState.weapons += count;
+    }
+    audioFX.playSuccess();
+    updateGarrisonModalUI();
+    renderGarrisonCitiesGrid();
+    updateUI();
+};
+
+window.closeGarrisonModal = function() {
+    document.getElementById('garrison-modal').classList.add('hidden');
+    currentGarrisonCityTarget = null;
+};
+
+// SERANGAN BALIK RIVAL AI KE KOTA PEMAIN
+function randomAiRetaliationCheck() {
+    const myCities = Object.keys(gameState.controlledCities || {});
+    if (myCities.length <= 1) return; // Kota pertama (Basecamp) aman dari AI
+
+    if (Math.random() < 0.0005) { // Pemicu Acak
+        const targetCity = myCities[Math.floor(Math.random() * myCities.length)];
+        if (targetCity === gameState.homeCity) return;
+
+        const garPwr = getCityGarrisonPower(targetCity);
+        const aiAttackPwr = Math.floor(Math.random() * 200) + 100;
+
+        if (garPwr >= aiAttackPwr) {
+            audioFX.playSuccess();
+            logMessage(`SERANGAN AI DIPUKUL MUNDUR: Rival AI gagal merebut ${targetCity}! Power Garnisun Anda (${garPwr} PWR) menang.`, 'success');
+        } else {
+            audioFX.playDanger();
+            delete gameState.controlledCities[targetCity];
+            delete gameState.cityGarrisons[targetCity];
+            updateCityOccupantGlobal(targetCity, null, '');
+
+            logMessage(`KOTA JATUH KEMBALI KE AI: Kota ${targetCity} berhasil direbut Rival AI karena Power Garnisun (${garPwr} PWR) kurang dari serangan AI (${aiAttackPwr} PWR)!`, 'danger');
+            updateUI();
+        }
+    }
+}
+
+// 📜 MISI CERITA & REPUTASI UNDERWORLD
+function renderContractsUI() {
+    const grid = document.getElementById('contracts-list-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    STORY_CONTRACTS_MASTER.forEach(c => {
+        const isDone = gameState.completedContracts && gameState.completedContracts[c.id];
+
+        const card = document.createElement('div');
+        card.className = `game-card ${isDone ? 'controlled-player' : ''}`;
+        card.innerHTML = `
+            <div>
+                <h4>${c.title}</h4>
+                <p>${c.desc}</p>
+                <p>Hadiah: <span class="text-green">Rp ${c.rewardCash.toLocaleString('id-ID')}</span> | <span class="text-yellow">+${c.rewardRep} REP</span></p>
+            </div>
+            ${isDone ? '<span class="text-green">✔ Misi Selesai</span>' :
+              `<button class="btn btn-gold" onclick="claimStoryContract('${c.id}')">Klaim Misi</button>`}
+        `;
+        grid.appendChild(card);
+    });
+}
+
+window.claimStoryContract = function(cId) {
+    const c = STORY_CONTRACTS_MASTER.find(x => x.id === cId);
+    if (!c) return;
+
+    let canClaim = true;
+    if (c.reqCities && Object.keys(gameState.controlledCities).length < c.reqCities) canClaim = false;
+    if (c.reqWeapons && (gameState.weapons || 0) < c.reqWeapons) canClaim = false;
+    if (c.reqMembers && (gameState.members || []).length < c.reqMembers) canClaim = false;
+    if (c.reqPwr && getPlayerTotalPower() < c.reqPwr) canClaim = false;
+
+    if (canClaim) {
+        audioFX.playSuccess();
+        if (!gameState.completedContracts) gameState.completedContracts = {};
+        gameState.completedContracts[cId] = true;
+        gameState.money += c.rewardCash;
+        gameState.reputation = (gameState.reputation || 0) + c.rewardRep;
+
+        alert(`MISI TERPENUHI: Anda mendapatkan Rp ${c.rewardCash.toLocaleString('id-ID')} & +${c.rewardRep} REP!`);
+        logMessage(`Misi '${c.title}' berhasil diklaim.`, 'success');
+        renderContractsUI();
+        updateUI();
+    } else alert("Syarat misi belum terpenuhi!");
+};
+
+// PETA WILAYAH & MODAL KIRIM PASUKAN AI (15 MENIT / MAX 1 ATTACK)
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -546,6 +886,7 @@ function renderTurfMap() {
     prov.cities.forEach(cityName => {
         const isControlledByMe = gameState.controlledCities[cityName];
         const occupant = globalOccupiedMap[cityName];
+        const isBeingAttackedByAi = (gameState.activeAiAttacks || []).some(atk => atk.cityName === cityName);
 
         let cardClass = 'controlled-enemy';
         let statusText = 'Dikuasai AI Rival';
@@ -556,6 +897,8 @@ function renderTurfMap() {
         } else if (occupant) {
             cardClass = 'controlled-otherplayer';
             statusText = `Dikuasai Pemain: ${occupant.username}`;
+        } else if (isBeingAttackedByAi) {
+            statusText = 'Pasukan Invasi Dalam Perjalanan (15 Mnt)...';
         }
 
         const card = document.createElement('div');
@@ -565,53 +908,150 @@ function renderTurfMap() {
             <p style="font-size:0.85rem;">Status: <strong>${statusText}</strong></p>
             ${isControlledByMe ? '<span class="text-green">✔ Wilayah Aman</span>' :
               occupant ? `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="startPvPWar15Min('${cityName}')">Serang Pemain (15 Mnt)</button>` :
-              `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="reclaimCity('${cityName}')">Serang & Rebut AI</button>`}
+              isBeingAttackedByAi ? `<button class="btn btn-gold btn-xs" style="margin-top:10px; width:100%;" disabled>Menyerang (15 Mnt)...</button>` :
+              `<button class="btn btn-red btn-xs" style="margin-top:10px; width:100%;" onclick="openAttackDeployModal('${cityName}')">Invasi AI (15 Mnt)</button>`}
         `;
         grid.appendChild(card);
     });
 }
 
-window.reclaimCity = async function(cityName) {
-    const occupant = globalOccupiedMap[cityName];
-    if (occupant) {
-        startPvPWar15Min(cityName);
+window.openAttackDeployModal = function(cityName) {
+    if (!gameState.activeAiAttacks) gameState.activeAiAttacks = [];
+
+    if (gameState.activeAiAttacks.length >= 1) {
+        alert("Batas maksimal 1 armada invasi AI! Tunggu serangan sebelumnya selesai.");
         return;
     }
 
-    const myPwr = getPlayerTotalPower();
-    if (myPwr < 100) {
-        alert("Butuh minimal 100 PWR untuk menyerang kota!");
+    pendingAttackCityTarget = cityName;
+    document.getElementById('attack-deploy-target-label').innerText = `Target: ${cityName}`;
+    document.getElementById('deploy-avail-members').innerText = (gameState.members || []).length;
+    document.getElementById('deploy-avail-weapons').innerText = gameState.weapons || 0;
+
+    document.getElementById('attack-deploy-modal').classList.remove('hidden');
+};
+
+window.closeAttackDeployModal = function() {
+    document.getElementById('attack-deploy-modal').classList.add('hidden');
+    pendingAttackCityTarget = null;
+};
+
+window.confirmAttackDeployment = async function() {
+    if (!pendingAttackCityTarget) return;
+
+    const reqMembersCount = parseInt(document.getElementById('deploy-member-count').value) || 0;
+    const reqWeaponsCount = parseInt(document.getElementById('deploy-weapon-count').value) || 0;
+
+    if (reqMembersCount <= 0) {
+        alert("Wajib mengirim minimal 1 pasukan untuk operasi invasi!");
         return;
     }
 
-    if (Math.random() < 0.6) {
-        audioFX.playSuccess();
-        gameState.controlledCities[cityName] = true;
-        await updateCityOccupantGlobal(cityName, currentUser.uid, gameState.username);
-
-        setAssistantMessage(`Sukses! Kota ${cityName} berhasil direbut.`);
-        logMessage(`Berhasil merebut wilayah ${cityName}!`, 'success');
-        await cloudAutosaveInterval();
-    } else {
-        audioFX.playDanger();
-        removeRandomMembers(1, 2);
-        setAssistantMessage(`Gagal menyerang ${cityName}. Pasukan terpukul mundur.`);
-        logMessage(`Gagal menyerang ${cityName}.`, 'danger');
+    if ((gameState.members || []).length < reqMembersCount || (gameState.weapons || 0) < reqWeaponsCount) {
+        alert("Jumlah Pasukan atau Senjata di Markas tidak cukup!");
+        return;
     }
+
+    // Ambil pasukan yang dikirim dari markas
+    let deployedMembers = [];
+    let deployedPwr = reqWeaponsCount * 25;
+
+    for (let i = 0; i < reqMembersCount; i++) {
+        const m = gameState.members.pop();
+        deployedMembers.push(m);
+        deployedPwr += (m.power || 0);
+    }
+    gameState.weapons -= reqWeaponsCount;
+
+    audioFX.playWarDrum();
+    const endTime = Date.now() + (15 * 60 * 1000); // 15 Menit Durasi Perjalanan Pasukan
+    gameState.activeAiAttacks.push({
+        attackId: Date.now(),
+        cityName: pendingAttackCityTarget,
+        endTime: endTime,
+        deployedMembers: deployedMembers,
+        deployedWeapons: reqWeaponsCount,
+        pwr: deployedPwr
+    });
+
+    logMessage(`MEMULAI INVASII 15 MENIT ke ${pendingAttackCityTarget}! ${reqMembersCount} Pasukan & ${reqWeaponsCount} Senjata berlayar ke lokasi.`, 'danger');
+    closeAttackDeployModal();
+    await cloudAutosaveInterval();
     updateUI();
 };
 
-window.startPvPWar15Min = async function(cityName) {
-    const occupant = globalOccupiedMap[cityName];
-    if (!occupant) {
-        reclaimCity(cityName);
+function aiAttacksTicker() {
+    if (!gameState.activeAiAttacks || gameState.activeAiAttacks.length === 0) {
+        renderActiveAiAttacks();
         return;
     }
 
-    if (occupant.uid === currentUser.uid) {
-        alert("Kota ini sudah milik Anda!");
+    const now = Date.now();
+    gameState.activeAiAttacks.forEach(async (atk) => {
+        if (now >= atk.endTime) {
+            // Evaluasi Hasil Pertempuran AI setelah 15 Menit
+            if (atk.pwr >= 100 && Math.random() < 0.70) {
+                audioFX.playSuccess();
+                gameState.controlledCities[atk.cityName] = true;
+                await updateCityOccupantGlobal(atk.cityName, currentUser.uid, gameState.username);
+
+                // Pasukan dikembalikan ke markas utama
+                (atk.deployedMembers || []).forEach(m => gameState.members.push(m));
+                gameState.weapons = (gameState.weapons || 0) + (atk.deployedWeapons || 0);
+
+                setAssistantMessage(`Sukses! Kota ${atk.cityName} berhasil direbut dari AI!`);
+                logMessage(`INVASII SUKSES: Kota ${atk.cityName} ditaklukkan! Pasukan kembali ke markas.`, 'success');
+            } else {
+                audioFX.playDanger();
+                // Pasukan gugur dalam pertempuran
+                setAssistantMessage(`Gagal menginvasi ${atk.cityName}. Pasukan gugur di pertempuran.`);
+                logMessage(`INVASII GAGAL: Serangan ke ${atk.cityName} dipukul mundur AI. Pasukan gugur.`, 'danger');
+            }
+
+            gameState.activeAiAttacks = gameState.activeAiAttacks.filter(a => a.attackId !== atk.attackId);
+            await cloudAutosaveInterval();
+            updateUI();
+        }
+    });
+
+    renderActiveAiAttacks();
+}
+
+function renderActiveAiAttacks() {
+    const grid = document.getElementById('active-ai-attacks-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (!gameState.activeAiAttacks || gameState.activeAiAttacks.length === 0) {
+        grid.innerHTML = '<p class="text-muted">Tidak ada armada invasi AI berjalan.</p>';
         return;
     }
+
+    const now = Date.now();
+    gameState.activeAiAttacks.forEach(atk => {
+        const sisaSec = Math.max(0, Math.ceil((atk.endTime - now) / 1000));
+        const min = Math.floor(sisaSec / 60);
+        const sec = sisaSec % 60;
+
+        const card = document.createElement('div');
+        card.className = 'game-card controlled-enemy';
+        card.innerHTML = `
+            <div>
+                <h4>Invasi AI: ${atk.cityName}</h4>
+                <p>Pasukan Dikirim: <strong>${(atk.deployedMembers||[]).length} Orang, ${atk.deployedWeapons||0} Senjata</strong></p>
+                <p>Power Invasi: <strong>${atk.pwr} PWR</strong></p>
+                <p>Sisa Waktu Pertempuran: <strong class="text-yellow">${min}:${sec < 10 ? '0' : ''}${sec}</strong></p>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+// PERANG PVP PEMAIN (15 MENIT)
+window.startPvPWar15Min = async function(cityName) {
+    const occupant = globalOccupiedMap[cityName];
+    if (!occupant) { openAttackDeployModal(cityName); return; }
+    if (occupant.uid === currentUser.uid) { alert("Kota ini sudah milik Anda!"); return; }
 
     const myPwr = getPlayerTotalPower();
     if (myPwr < 150) {
@@ -633,8 +1073,7 @@ window.startPvPWar15Min = async function(cityName) {
         targetUid: occupant.uid,
         targetUsername: occupant.username,
         endTime: warEndTime,
-        attackerPwr: myPwr,
-        defenderBonusPwr: 0
+        attackerPwr: myPwr
     };
 
     if (!gameState.activePvPWars) gameState.activePvPWars = [];
@@ -651,7 +1090,7 @@ window.startPvPWar15Min = async function(cityName) {
         await saveUserDataToCloud(occupant.uid, targetCloudData);
     }
 
-    logMessage(`MEMULAI SERANGAN 15 MENIT ke ${cityName} milik ${occupant.username}! Pasukan sedang dalam perjalanan.`, 'danger');
+    logMessage(`MEMULAI SERANGAN PVP 15 MENIT ke ${cityName} milik ${occupant.username}!`, 'danger');
     await cloudAutosaveInterval();
     updateUI();
 };
@@ -673,8 +1112,6 @@ function pvpWarsTicker() {
                 if (targetCloudData.defendingMercenaries) targetPwr += 100;
             }
 
-            if (globalPilkada.winnerId === 1) targetPwr = Math.floor(targetPwr * 1.3);
-
             if (war.attackerPwr > targetPwr) {
                 audioFX.playSuccess();
                 gameState.controlledCities[war.cityName] = true;
@@ -687,9 +1124,7 @@ function pvpWarsTicker() {
                 await updateCityOccupantGlobal(war.cityName, currentUser.uid, gameState.username);
 
                 if (targetCloudData) {
-                    if (targetCloudData.controlledCities) {
-                        delete targetCloudData.controlledCities[war.cityName];
-                    }
+                    if (targetCloudData.controlledCities) delete targetCloudData.controlledCities[war.cityName];
                     targetCloudData.money = Math.max(0, targetCloudData.money - lootedCash);
                     targetCloudData.peaceShieldUntil = Date.now() + (12 * 60 * 60 * 1000);
                     delete targetCloudData.defendingMercenaries;
@@ -719,7 +1154,7 @@ function renderActivePvPWars() {
     grid.innerHTML = '';
 
     if (!gameState.activePvPWars || gameState.activePvPWars.length === 0) {
-        grid.innerHTML = '<p class="text-muted">Tidak ada armada perang berjalan.</p>';
+        grid.innerHTML = '<p class="text-muted">Tidak ada armada perang PvP berjalan.</p>';
         return;
     }
 
@@ -733,7 +1168,7 @@ function renderActivePvPWars() {
         card.className = 'game-card controlled-enemy';
         card.innerHTML = `
             <div>
-                <h4>Serangan ke ${w.cityName}</h4>
+                <h4>Serangan PvP: ${w.cityName}</h4>
                 <p>Target: <strong>${w.targetUsername}</strong></p>
                 <p>Sisa Waktu Pasukan Tiba: <strong class="text-yellow">${min}:${sec < 10 ? '0' : ''}${sec}</strong></p>
             </div>
@@ -771,7 +1206,6 @@ function checkIncomingPvPDefenseModal() {
     }
 }
 
-// REBALANCING 3: Biaya Pasukan Bayaran Pertahanan Diturunkan jadi Rp 15 Juta
 window.hireMercenariesForDefense = async function() {
     if (gameState.money >= 15000000) {
         audioFX.playSuccess();
@@ -794,7 +1228,6 @@ function renderPilkadaUI() {
     const phaseLabel = document.getElementById('politics-phase-label');
     const timerLabel = document.getElementById('politics-timer-count');
     const govBadge = document.getElementById('active-governor-badge');
-    const newsContainer = document.getElementById('politics-news-feed');
     const grid = document.getElementById('paslon-list-grid');
 
     if (!phaseLabel || !grid) return;
@@ -805,16 +1238,6 @@ function renderPilkadaUI() {
         if (govBadge) govBadge.innerText = winnerObj ? winnerObj.name : 'Belum Ada';
     } else {
         if (govBadge) govBadge.innerText = 'Masa Kampanye / Kosong';
-    }
-
-    if (newsContainer) {
-        newsContainer.innerHTML = '';
-        (globalPilkada.newsFeed || []).forEach(news => {
-            const div = document.createElement('div');
-            div.style.marginBottom = '4px';
-            div.innerText = `• ${news}`;
-            newsContainer.appendChild(div);
-        });
     }
 
     grid.innerHTML = '';
@@ -863,7 +1286,6 @@ function pilkadaTicker() {
         if (globalPilkada.phase === 'KAMPANYE') {
             globalPilkada.phase = 'QUICK_COUNT';
             globalPilkada.phaseEndTime = now + (2 * 60 * 60 * 1000);
-            globalPilkada.newsFeed.unshift("Masa Kampanye ditutup! Lapor hitung cepat / Quick Count dimulai...");
             executePilkadaWinnerSelection();
         } else if (globalPilkada.phase === 'QUICK_COUNT') {
             globalPilkada.phase = 'MASA_JABATAN';
@@ -873,7 +1295,6 @@ function pilkadaTicker() {
             globalPilkada.phaseEndTime = now + (10 * 60 * 60 * 1000);
             globalPilkada.winnerId = null;
             globalPilkada.paslon.forEach(p => { p.totalFund = 0; p.usersContrib = {}; });
-            globalPilkada.newsFeed.unshift("Masa jabatan usai! Pilkada Serentak periode baru resmi dibuka.");
         }
         saveGlobalPilkadaData(globalPilkada);
         renderPilkadaUI();
@@ -902,7 +1323,6 @@ function executePilkadaWinnerSelection() {
 
     audioFX.playSuccess();
     globalPilkada.winnerId = winner.id;
-    globalPilkada.newsFeed.unshift(`HASIL QUICK COUNT: ${winner.name} secara mengejutkan MENANG Pilkada!`);
     logMessage(`PILKADA SELESAI: ${winner.name} resmi terpilih menjadi Gubernur!`, 'success');
 }
 
@@ -919,7 +1339,6 @@ window.injectPoliticalFund = function(paslonId, amount) {
             p.totalFund += amount;
             if (!p.usersContrib) p.usersContrib = {};
             p.usersContrib[currentUser.uid] = (p.usersContrib[currentUser.uid] || 0) + amount;
-            globalPilkada.newsFeed.unshift(`${gameState.username} memberikan suntikan dana Rp ${amount.toLocaleString('id-ID')} untuk ${p.name}`);
         }
         saveGlobalPilkadaData(globalPilkada);
         logMessage(`Suntikan modal politik Rp ${amount.toLocaleString('id-ID')} sukses.`, 'success');
@@ -928,7 +1347,6 @@ window.injectPoliticalFund = function(paslonId, amount) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// REBALANCING 4: Serangan Fajar Disesuaikan Jadi Rp 12.5 Juta
 window.seranganFajar = function(paslonId) {
     if (gameState.money >= 12500000) {
         audioFX.playWarDrum();
@@ -938,7 +1356,6 @@ window.seranganFajar = function(paslonId) {
             p.totalFund += 20000000;
             if (!p.usersContrib) p.usersContrib = {};
             p.usersContrib[currentUser.uid] = (p.usersContrib[currentUser.uid] || 0) + 12500000;
-            globalPilkada.newsFeed.unshift(`🚨 DANA GELAP / SERANGAN FAJAR dieksekusi untuk ${p.name}! Suara mendongkrak pesat!`);
         }
         saveGlobalPilkadaData(globalPilkada);
         logMessage("Serangan Fajar dieksekusi! (Rp 12.5 Juta).", 'danger');
@@ -987,7 +1404,7 @@ window.startCrime = function(crimeId) {
     const c = CRIMES_DATA.find(x => x.id === crimeId);
     if (!c) return;
 
-    if (gameState.members.length < c.minMembers || getPlayerTotalPower() < c.minPower) {
+    if ((gameState.members || []).length < c.minMembers || getPlayerTotalPower() < c.minPower) {
         alert(`Syarat tidak cukup! Butuh min ${c.minMembers} pasukan dan ${c.minPower} PWR.`);
         return;
     }
@@ -1023,14 +1440,14 @@ function crimeSingleTicker() {
                 audioFX.playSuccess();
                 const earned = Math.floor(Math.random() * (c.maxReward - c.minReward + 1)) + c.minReward;
                 gameState.money += earned;
-                gameState.heat = Math.min(100, gameState.heat + heatInc);
+                gameState.heat = Math.min(100, (gameState.heat || 0) + heatInc);
                 setAssistantMessage(`Aksi '${c.name}' sukses! Mendapatkan Rp ${earned.toLocaleString('id-ID')}.`);
                 logMessage(`Aksi '${c.name}' sukses! (+Rp ${earned.toLocaleString('id-ID')})`, 'success');
 
                 if (gameState.heat >= 100) triggerPlayerJail();
             } else {
                 audioFX.playDanger();
-                gameState.heat = Math.min(100, gameState.heat + (heatInc * 2));
+                gameState.heat = Math.min(100, (gameState.heat || 0) + (heatInc * 2));
                 if (Math.random() < 0.5 && gameState.members.length > 0) {
                     const jailedMem = gameState.members.pop();
                     gameState.jailedMembers.push({ ...jailedMem, timerSec: 60 });
@@ -1083,13 +1500,13 @@ window.buyBusiness = function(bId) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// REBALANCING 5: Biaya Pasukan Rp 1.500.000 & Senjata Rp 6.000.000
 window.buyMember = function() {
     const cost = 1500000;
     if (gameState.money >= cost) {
         audioFX.playSuccess();
         gameState.money -= cost;
         const pwr = Math.floor(Math.random() * 5) + 1;
+        if (!gameState.members) gameState.members = [];
         gameState.members.push({ id: Date.now(), power: pwr });
         setAssistantMessage(`1 Pasukan baru direkrut (+${pwr} PWR).`);
         logMessage(`Merekrut pasukan baru (+${pwr} PWR).`, 'success');
@@ -1114,7 +1531,7 @@ function renderMembersList() {
     grid.innerHTML = '';
 
     if (!gameState.members || gameState.members.length === 0) {
-        grid.innerHTML = '<p class="text-muted">Tidak ada pasukan aktif.</p>';
+        grid.innerHTML = '<p class="text-muted">Tidak ada pasukan di markas utama.</p>';
         return;
     }
 
@@ -1123,7 +1540,7 @@ function renderMembersList() {
         card.className = 'game-card';
         card.innerHTML = `
             <div>
-                <h4>Pasukan #${idx + 1}</h4>
+                <h4>Pasukan Markas #${idx + 1}</h4>
                 <p>Kekuatan: <strong>${m.power} PWR</strong> | Upah: Rp 50.000 / mnt</p>
             </div>
             <button class="btn btn-red btn-xs" onclick="fireMember(${m.id})">Pecat</button>
@@ -1181,7 +1598,7 @@ window.hireOfficer = function(oId) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// FIX MINI GAME SEKERING SEL PENJARA
+// MINI GAME SEKERING SEL PENJARA
 function triggerPlayerJail() {
     audioFX.playSiren();
     gameState.isJailed = true;
@@ -1203,7 +1620,6 @@ function initJailMiniGame() {
     grid.innerHTML = '';
     status.innerText = "Tekan tombol saklar sesuai urutan kode!";
 
-    // Generate 3 digit kode acak (1, 2, atau 3)
     jailMiniGamePattern = [
         Math.floor(Math.random() * 3) + 1,
         Math.floor(Math.random() * 3) + 1,
@@ -1275,7 +1691,6 @@ function jailTicker() {
     }
 }
 
-// REBALANCING 6: Suap Bebas 100% Penjara Ditingkatkan Rasionalisasinya (Rp 25 Juta)
 window.jailBribe100 = function() {
     let cost = 25000000;
     if (globalPilkada.winnerId === 2) cost *= 0.5;
@@ -1560,12 +1975,12 @@ window.conquerGlobal = function(gId) {
     updateUI();
 };
 
-// REBALANCING 7: Donasi Ormas Rp 15 Juta -> Heat -10% | Suap Polda Rp 25 Juta -> Heat -30%
+// ORMAS & SUAP
 window.donateOrmas = function() {
     if (gameState.money >= 15000000) {
         audioFX.playSuccess();
         gameState.money -= 15000000;
-        gameState.heat = Math.max(0, gameState.heat - 10);
+        gameState.heat = Math.max(0, (gameState.heat || 0) - 10);
         logMessage("Bakti sosial sukses. Heat -10%.", 'success');
         updateUI();
     } else alert("Uang tidak cukup!");
@@ -1575,7 +1990,7 @@ window.bribePolice = function() {
     if (gameState.money >= 25000000) {
         audioFX.playSuccess();
         gameState.money -= 25000000;
-        gameState.heat = Math.max(0, gameState.heat - 30);
+        gameState.heat = Math.max(0, (gameState.heat || 0) - 30);
         logMessage("Suap Polda sukses. Heat -30%.", 'success');
         updateUI();
     } else alert("Uang tidak cukup!");
@@ -1631,7 +2046,6 @@ function eventModalTimerTicker() {
     }
 }
 
-// REBALANCING 8: Penyesuaian Nilai Nominal Seluruh Event Acak
 function handleEventAction(act, choiceText = '') {
     document.getElementById('event-modal').classList.add('hidden');
     currentActiveEvent = null;
@@ -1662,11 +2076,10 @@ function handleEventAction(act, choiceText = '') {
             logMessage("Bisnis ditutup sementara selama 2 menit (Sidak Polisi).", 'danger');
             break;
         case 'ignore_heat':
-            gameState.heat = Math.min(100, gameState.heat + 15);
+            gameState.heat = Math.min(100, (gameState.heat || 0) + 15);
             logMessage("Menghiraukan sidak polisi. Heat Level +15%.", 'danger');
             break;
         case 'sabotage_fix':
-            // Biaya perbaikan bisnis disesuaikan rasional jadi Rp 3 Juta
             if (gameState.money >= 3000000) {
                 audioFX.playSuccess();
                 gameState.money -= 3000000;
@@ -1704,7 +2117,7 @@ function handleEventAction(act, choiceText = '') {
             if (gameState.money >= 5000000) {
                 audioFX.playSuccess();
                 gameState.money -= 5000000;
-                gameState.heat = Math.max(0, gameState.heat - 20);
+                gameState.heat = Math.max(0, (gameState.heat || 0) - 20);
                 logMessage("Dokumen rahasia dimusnahkan. Biaya kurir Rp 5 Juta, Heat -20%.", 'success');
             } else {
                 logMessage("Kas kurang untuk bayar kurir pemusnah dokumen!", 'danger');
@@ -1748,25 +2161,25 @@ function handleEventAction(act, choiceText = '') {
                 logMessage("Suap wartawan Rp 6 Juta sukses.", 'success');
             } else {
                 logMessage("Uang kurang untuk suap wartawan! Media merilis berita, Heat +10%.", 'danger');
-                gameState.heat = Math.min(100, gameState.heat + 10);
+                gameState.heat = Math.min(100, (gameState.heat || 0) + 10);
             }
             break;
         case 'media_terror':
-            gameState.heat = Math.min(100, gameState.heat + 20);
+            gameState.heat = Math.min(100, (gameState.heat || 0) + 20);
             logMessage("Menteror media! Heat Level +20%.", 'danger');
             break;
         case 'social_aid':
             if (gameState.money >= 5000000) {
                 audioFX.playSuccess();
                 gameState.money -= 5000000;
-                gameState.heat = Math.max(0, gameState.heat - 10);
+                gameState.heat = Math.max(0, (gameState.heat || 0) - 10);
                 logMessage("Membagi sembako ke warga. Heat -10%.", 'success');
             } else {
                 logMessage("Kas tidak cukup untuk beli sembako warga!", 'danger');
             }
             break;
         case 'dispers_crowd':
-            gameState.heat = Math.min(100, gameState.heat + 15);
+            gameState.heat = Math.min(100, (gameState.heat || 0) + 15);
             logMessage("Membubarkan demo warga secara paksa! Heat +15%.", 'danger');
             break;
         case 'alliance_yes':
@@ -1792,6 +2205,12 @@ function handleEventAction(act, choiceText = '') {
 
 window.toggleGuideModal = function(show) {
     const m = document.getElementById('guide-modal');
+    if (show) m.classList.remove('hidden');
+    else m.classList.add('hidden');
+};
+
+window.toggleTierInfoModal = function(show) {
+    const m = document.getElementById('tier-info-modal');
     if (show) m.classList.remove('hidden');
     else m.classList.add('hidden');
 };
