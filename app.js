@@ -110,6 +110,7 @@ class AudioSynth {
 
 const audioFX = new AudioSynth();
 
+// FIX 1: Kosongkan array members agar Power tidak bertambah sendiri saat login
 function createDefaultGameState() {
     return {
         setupDone: false,
@@ -122,10 +123,7 @@ function createDefaultGameState() {
         isJailed: false,
         jailTimerSec: 0,
         jailTimesCount: 0,
-        members: [
-            { id: Date.now() + 1, power: Math.floor(Math.random() * 5) + 1 },
-            { id: Date.now() + 2, power: Math.floor(Math.random() * 5) + 1 }
-        ],
+        members: [], // Kosongkan agar murni dibaca dari data cloud
         jailedMembers: [],
         officers: {},
         businesses: {},
@@ -322,6 +320,13 @@ window.submitInitialSetup = async function() {
     gameState.homeCity = cName;
     gameState.controlledCities = {};
     gameState.controlledCities[cName] = true;
+
+    // Pasukan awal hanya diberikan 2 orang saat PERTAMA KALI mendaftar
+    gameState.members = [
+        { id: Date.now() + 1, power: Math.floor(Math.random() * 5) + 1 },
+        { id: Date.now() + 2, power: Math.floor(Math.random() * 5) + 1 }
+    ];
+
     gameState.setupDone = true;
 
     document.getElementById('setup-modal').classList.add('hidden');
@@ -401,15 +406,16 @@ function calculateTotalIncome1Min() {
     return income;
 }
 
+// REBALANCING 2: Biaya Upah Anak Buah Di-rasionalkan jadi Rp 50.000 / mnt
 function calculateTotalExpenses1Min() {
-    let baseExpense = gameState.members.length * 150000;
+    let baseExpense = gameState.members.length * 50000;
     if (gameState.officers['bambang_lintah']) baseExpense *= 0.8;
     return baseExpense;
 }
 
 function getPlayerTotalPower() {
-    let pwr = gameState.weapons * 25;
-    gameState.members.forEach(m => pwr += m.power);
+    let pwr = (gameState.weapons || 0) * 25;
+    (gameState.members || []).forEach(m => pwr += (m.power || 0));
     return pwr;
 }
 
@@ -515,7 +521,7 @@ async function renderLeaderboard() {
     });
 }
 
-// PETA WILAYAH & PERANG PVP 15 MENIT (REVISI SINKRONISASI KEPEMILIKAN)
+// PETA WILAYAH
 async function populateProvinceViewSelect() {
     globalOccupiedMap = await fetchGlobalOccupiedCities();
     const sel = document.getElementById('province-view-select');
@@ -565,11 +571,9 @@ function renderTurfMap() {
     });
 }
 
-// MEREBUT KOTA DARI AI RIVAL (HANYA UNTUK KOTA KOSONG/AI)
 window.reclaimCity = async function(cityName) {
     const occupant = globalOccupiedMap[cityName];
     if (occupant) {
-        // Jika kota ternyata dikuasai pemain lain, alihkan ke PvP perang
         startPvPWar15Min(cityName);
         return;
     }
@@ -583,8 +587,6 @@ window.reclaimCity = async function(cityName) {
     if (Math.random() < 0.6) {
         audioFX.playSuccess();
         gameState.controlledCities[cityName] = true;
-        
-        // UPDATE STATUS KOTA KE GLOBAL DATABASE
         await updateCityOccupantGlobal(cityName, currentUser.uid, gameState.username);
 
         setAssistantMessage(`Sukses! Kota ${cityName} berhasil direbut.`);
@@ -667,7 +669,7 @@ function pvpWarsTicker() {
             let targetPwr = 200;
             if (targetCloudData) {
                 targetPwr = (targetCloudData.weapons || 0) * 25;
-                (targetCloudData.members || []).forEach(m => targetPwr += m.power);
+                (targetCloudData.members || []).forEach(m => targetPwr += (m.power || 0));
                 if (targetCloudData.defendingMercenaries) targetPwr += 100;
             }
 
@@ -682,7 +684,6 @@ function pvpWarsTicker() {
                 }
                 gameState.money += lootedCash;
 
-                // FIX SINKRONISASI GLOBAL: UPDATE PEMILIK KOTA & HAPUS DARI PEMAIN LAMA
                 await updateCityOccupantGlobal(war.cityName, currentUser.uid, gameState.username);
 
                 if (targetCloudData) {
@@ -770,17 +771,18 @@ function checkIncomingPvPDefenseModal() {
     }
 }
 
+// REBALANCING 3: Biaya Pasukan Bayaran Pertahanan Diturunkan jadi Rp 15 Juta
 window.hireMercenariesForDefense = async function() {
-    if (gameState.money >= 25000000) {
+    if (gameState.money >= 15000000) {
         audioFX.playSuccess();
-        gameState.money -= 25000000;
+        gameState.money -= 15000000;
         gameState.defendingMercenaries = true;
         alert("Berhasil menyewa pasukan bayaran! Pertahanan kota meningkat +100 PWR.");
-        logMessage("Sewa Pasukan Bayaran Rp 25 Juta untuk pertahanan kota.", 'success');
+        logMessage("Sewa Pasukan Bayaran Rp 15 Juta untuk pertahanan kota.", 'success');
         document.getElementById('pvp-defense-modal').classList.add('hidden');
         await cloudAutosaveInterval();
         updateUI();
-    } else alert("Uang kas tidak cukup (Butuh Rp 25 Juta)!");
+    } else alert("Uang kas tidak cukup (Butuh Rp 15 Juta)!");
 };
 
 window.ignoreDefense = function() {
@@ -835,8 +837,8 @@ function renderPilkadaUI() {
             </div>
             ${globalPilkada.phase === 'KAMPANYE' ? `
                 <div style="display:flex; gap:5px; margin-top:10px;">
-                    <button class="btn btn-gold btn-xs" style="flex:1;" onclick="injectPoliticalFund(${p.id}, 10000000)">Suntik Rp 10Jt</button>
-                    <button class="btn btn-red btn-xs" style="flex:1;" onclick="seranganFajar(${p.id})">Serangan Fajar (Rp 25Jt)</button>
+                    <button class="btn btn-gold btn-xs" style="flex:1;" onclick="injectPoliticalFund(${p.id}, 5000000)">Suntik Rp 5Jt</button>
+                    <button class="btn btn-red btn-xs" style="flex:1;" onclick="seranganFajar(${p.id})">Serangan Fajar (Rp 12.5Jt)</button>
                 </div>
             ` : '<span class="text-muted">Pencoblosan Diperhitungkan...</span>'}
         `;
@@ -926,19 +928,20 @@ window.injectPoliticalFund = function(paslonId, amount) {
     } else alert("Uang kas tidak cukup!");
 };
 
+// REBALANCING 4: Serangan Fajar Disesuaikan Jadi Rp 12.5 Juta
 window.seranganFajar = function(paslonId) {
-    if (gameState.money >= 25000000) {
+    if (gameState.money >= 12500000) {
         audioFX.playWarDrum();
-        gameState.money -= 25000000;
+        gameState.money -= 12500000;
         const p = globalPilkada.paslon.find(x => x.id === paslonId);
         if (p) {
-            p.totalFund += 35000000;
+            p.totalFund += 20000000;
             if (!p.usersContrib) p.usersContrib = {};
-            p.usersContrib[currentUser.uid] = (p.usersContrib[currentUser.uid] || 0) + 25000000;
+            p.usersContrib[currentUser.uid] = (p.usersContrib[currentUser.uid] || 0) + 12500000;
             globalPilkada.newsFeed.unshift(`🚨 DANA GELAP / SERANGAN FAJAR dieksekusi untuk ${p.name}! Suara mendongkrak pesat!`);
         }
         saveGlobalPilkadaData(globalPilkada);
-        logMessage("Serangan Fajar dieksekusi! (Rp 25 Juta).", 'danger');
+        logMessage("Serangan Fajar dieksekusi! (Rp 12.5 Juta).", 'danger');
         renderPilkadaUI();
         updateUI();
     } else alert("Uang kas tidak cukup!");
@@ -1080,8 +1083,9 @@ window.buyBusiness = function(bId) {
     } else alert("Uang kas tidak cukup!");
 };
 
+// REBALANCING 5: Biaya Pasukan Rp 1.500.000 & Senjata Rp 6.000.000
 window.buyMember = function() {
-    const cost = 2500000;
+    const cost = 1500000;
     if (gameState.money >= cost) {
         audioFX.playSuccess();
         gameState.money -= cost;
@@ -1094,11 +1098,11 @@ window.buyMember = function() {
 };
 
 window.buyWeapon = function() {
-    const cost = 10000000;
+    const cost = 6000000;
     if (gameState.money >= cost) {
         audioFX.playSuccess();
         gameState.money -= cost;
-        gameState.weapons++;
+        gameState.weapons = (gameState.weapons || 0) + 1;
         logMessage("Membeli 1 Senjata Baru (+25 PWR).", 'success');
         updateUI();
     } else alert("Uang kas tidak cukup!");
@@ -1109,7 +1113,7 @@ function renderMembersList() {
     if (!grid) return;
     grid.innerHTML = '';
 
-    if (gameState.members.length === 0) {
+    if (!gameState.members || gameState.members.length === 0) {
         grid.innerHTML = '<p class="text-muted">Tidak ada pasukan aktif.</p>';
         return;
     }
@@ -1120,7 +1124,7 @@ function renderMembersList() {
         card.innerHTML = `
             <div>
                 <h4>Pasukan #${idx + 1}</h4>
-                <p>Kekuatan: <strong>${m.power} PWR</strong> | Upah: Rp 150.000 / mnt</p>
+                <p>Kekuatan: <strong>${m.power} PWR</strong> | Upah: Rp 50.000 / mnt</p>
             </div>
             <button class="btn btn-red btn-xs" onclick="fireMember(${m.id})">Pecat</button>
         `;
@@ -1135,7 +1139,7 @@ window.fireMember = function(memberId) {
 };
 
 function removeRandomMembers(min, max) {
-    if (gameState.members.length === 0) return;
+    if (!gameState.members || gameState.members.length === 0) return;
     const count = Math.min(gameState.members.length, Math.floor(Math.random() * (max - min + 1)) + min);
     for (let i = 0; i < count; i++) gameState.members.pop();
 }
@@ -1177,7 +1181,7 @@ window.hireOfficer = function(oId) {
     } else alert("Uang kas tidak cukup!");
 };
 
-// PENJARA & MINI GAME SEKERING LISTRIK
+// FIX MINI GAME SEKERING SEL PENJARA
 function triggerPlayerJail() {
     audioFX.playSiren();
     gameState.isJailed = true;
@@ -1193,16 +1197,28 @@ function triggerPlayerJail() {
 function initJailMiniGame() {
     const grid = document.getElementById('jail-minigame-grid');
     const status = document.getElementById('jail-minigame-status');
+    const seqDisplay = document.getElementById('jail-minigame-sequence-display');
     if (!grid) return;
-    grid.innerHTML = '';
-    status.innerText = "Tekan Saklar 1-3 Sesuai Urutan!";
 
-    jailMiniGamePattern = [Math.floor(Math.random()*3)+1, Math.floor(Math.random()*3)+1];
+    grid.innerHTML = '';
+    status.innerText = "Tekan tombol saklar sesuai urutan kode!";
+
+    // Generate 3 digit kode acak (1, 2, atau 3)
+    jailMiniGamePattern = [
+        Math.floor(Math.random() * 3) + 1,
+        Math.floor(Math.random() * 3) + 1,
+        Math.floor(Math.random() * 3) + 1
+    ];
     jailMiniGameUserIdx = 0;
+
+    if (seqDisplay) {
+        seqDisplay.innerText = `KODE: [ ${jailMiniGamePattern.join(' - ')} ]`;
+    }
 
     for (let i = 1; i <= 3; i++) {
         const btn = document.createElement('button');
         btn.className = 'btn btn-gold';
+        btn.style.flex = '1';
         btn.innerText = `⚡ Saklar ${i}`;
         btn.onclick = () => handleJailMiniGameClick(i);
         grid.appendChild(btn);
@@ -1216,15 +1232,19 @@ function handleJailMiniGameClick(num) {
         if (jailMiniGameUserIdx >= jailMiniGamePattern.length) {
             audioFX.playSuccess();
             gameState.jailTimerSec = Math.max(0, gameState.jailTimerSec - 30);
+            status.className = "text-green";
             status.innerText = "RETAS SUKSES! Masa Tahanan Dipotong 30 Detik!";
             initJailMiniGame();
         } else {
-            status.innerText = "Saklar Tepat! Lanjutkan saklar berikutnya...";
+            status.className = "text-yellow";
+            status.innerText = `Saklar ${num} Tepat! Tekan saklar berikutnya...`;
         }
     } else {
         audioFX.playDanger();
-        status.innerText = "Konslet! Urutan salah, coba lagi!";
+        status.className = "text-red";
+        status.innerText = "KONSLET! Urutan salah, mengulang kode baru...";
         jailMiniGameUserIdx = 0;
+        setTimeout(initJailMiniGame, 1000);
     }
 }
 
@@ -1255,8 +1275,9 @@ function jailTicker() {
     }
 }
 
+// REBALANCING 6: Suap Bebas 100% Penjara Ditingkatkan Rasionalisasinya (Rp 25 Juta)
 window.jailBribe100 = function() {
-    let cost = 50000000;
+    let cost = 25000000;
     if (globalPilkada.winnerId === 2) cost *= 0.5;
 
     if (gameState.money >= cost) {
@@ -1271,9 +1292,9 @@ window.jailBribe100 = function() {
 };
 
 window.jailLawyer = function() {
-    if (gameState.money >= 15000000) {
-        gameState.money -= 15000000;
-        if (Math.random() < 0.45) {
+    if (gameState.money >= 8000000) {
+        gameState.money -= 8000000;
+        if (Math.random() < 0.5) {
             audioFX.playSuccess();
             gameState.isJailed = false;
             gameState.heat = 20;
@@ -1285,12 +1306,12 @@ window.jailLawyer = function() {
             alert("Hukuman dipotong 30 detik.");
         }
         updateUI();
-    } else alert("Uang tidak cukup!");
+    } else alert("Uang tidak cukup (Butuh Rp 8 Juta)!");
 };
 
 window.jailBreakout = function() {
-    if (gameState.money >= 5000000) {
-        gameState.money -= 5000000;
+    if (gameState.money >= 3000000) {
+        gameState.money -= 3000000;
         if (Math.random() < 0.3) {
             audioFX.playSuccess();
             gameState.isJailed = false;
@@ -1304,7 +1325,7 @@ window.jailBreakout = function() {
             removeRandomMembers(1, 2);
         }
         updateUI();
-    } else alert("Uang tidak cukup!");
+    } else alert("Uang tidak cukup (Butuh Rp 3 Juta)!");
 };
 
 function renderJailedMembersList() {
@@ -1321,7 +1342,7 @@ function renderJailedMembersList() {
         const div = document.createElement('div');
         div.style.fontSize = '0.8rem';
         div.style.marginTop = '2px';
-        div.innerHTML = `PWR ${m.power} (${m.timerSec}s) <button class="btn-xs btn-gold" onclick="bribeFreeJailedMember(${m.id})">Suap (Rp 10Jt)</button>`;
+        div.innerHTML = `PWR ${m.power} (${m.timerSec}s) <button class="btn-xs btn-gold" onclick="bribeFreeJailedMember(${m.id})">Suap (Rp 5Jt)</button>`;
         container.appendChild(div);
     });
 }
@@ -1334,14 +1355,14 @@ window.bribeFreeJailedMember = function(mId) {
         return;
     }
 
-    if (gameState.money >= 10000000) {
+    if (gameState.money >= 5000000) {
         audioFX.playSuccess();
-        gameState.money -= 10000000;
+        gameState.money -= 5000000;
         gameState.members.push({ id: targetMember.id, power: targetMember.power });
         gameState.jailedMembers = gameState.jailedMembers.filter(x => x.id !== mId);
         logMessage("Anak buah berhasil dibebaskan dari sel melalui suap.", 'success');
         updateUI();
-    } else alert("Uang tidak cukup untuk menyuap!");
+    } else alert("Uang tidak cukup untuk menyuap (Butuh Rp 5 Juta)!");
 };
 
 // EKSPEDISI PENYELUNDUPAN
@@ -1499,7 +1520,7 @@ function renderGlobalTargets() {
         }
     } else {
         if (descEl) {
-            descEl.innerText = "Terkunci: Anda wajib menguasai 100% kota AI di Indonesia sebelum bisa melakukan ekspansi internasional!";
+            descEl.innerText = "Terkunci: Anda wajib menguasai 100% wilayah AI di Indonesia sebelum bisa melakukan ekspansi internasional!";
             descEl.className = "text-red";
         }
     }
@@ -1539,22 +1560,23 @@ window.conquerGlobal = function(gId) {
     updateUI();
 };
 
+// REBALANCING 7: Donasi Ormas Rp 15 Juta -> Heat -10% | Suap Polda Rp 25 Juta -> Heat -30%
 window.donateOrmas = function() {
     if (gameState.money >= 15000000) {
         audioFX.playSuccess();
         gameState.money -= 15000000;
-        gameState.heat = Math.max(0, gameState.heat - 15);
-        logMessage("Bakti sosial sukses. Heat -15%.", 'success');
+        gameState.heat = Math.max(0, gameState.heat - 10);
+        logMessage("Bakti sosial sukses. Heat -10%.", 'success');
         updateUI();
     } else alert("Uang tidak cukup!");
 };
 
 window.bribePolice = function() {
-    if (gameState.money >= 40000000) {
+    if (gameState.money >= 25000000) {
         audioFX.playSuccess();
-        gameState.money -= 40000000;
-        gameState.heat = Math.max(0, gameState.heat - 25);
-        logMessage("Suap polda sukses. Heat -25%.", 'success');
+        gameState.money -= 25000000;
+        gameState.heat = Math.max(0, gameState.heat - 30);
+        logMessage("Suap Polda sukses. Heat -30%.", 'success');
         updateUI();
     } else alert("Uang tidak cukup!");
 };
@@ -1609,26 +1631,27 @@ function eventModalTimerTicker() {
     }
 }
 
+// REBALANCING 8: Penyesuaian Nilai Nominal Seluruh Event Acak
 function handleEventAction(act, choiceText = '') {
     document.getElementById('event-modal').classList.add('hidden');
     currentActiveEvent = null;
 
     switch(act) {
         case 'fight_rival':
-            if (getPlayerTotalPower() >= 150) {
+            if (getPlayerTotalPower() >= 120) {
                 audioFX.playSuccess();
                 logMessage("Berhasil memukul mundur geng rival!", 'success');
             } else {
                 audioFX.playDanger();
-                const penalty = Math.min(gameState.money, 15000000);
+                const penalty = Math.min(gameState.money, 5000000);
                 gameState.money -= penalty;
                 logMessage(`Kekuatan kurang! Bisnis diserang, rugi Rp ${penalty.toLocaleString('id-ID')}.`, 'danger');
             }
             break;
         case 'pay_peace':
-            if (gameState.money >= 10000000) {
-                gameState.money -= 10000000;
-                logMessage("Membayar Rp 10 Juta untuk uang damai.", 'danger');
+            if (gameState.money >= 3000000) {
+                gameState.money -= 3000000;
+                logMessage("Membayar Rp 3 Juta untuk uang damai.", 'danger');
             } else {
                 logMessage("Kas tidak cukup bayar uang damai! Markas dijarah rival.", 'danger');
                 gameState.money = 0;
@@ -1643,10 +1666,11 @@ function handleEventAction(act, choiceText = '') {
             logMessage("Menghiraukan sidak polisi. Heat Level +15%.", 'danger');
             break;
         case 'sabotage_fix':
-            if (gameState.money >= 15000000) {
+            // Biaya perbaikan bisnis disesuaikan rasional jadi Rp 3 Juta
+            if (gameState.money >= 3000000) {
                 audioFX.playSuccess();
-                gameState.money -= 15000000;
-                logMessage("Memperbaiki bisnis yang disabotase (Rp 15 Juta).", 'success');
+                gameState.money -= 3000000;
+                logMessage("Memperbaiki bisnis yang disabotase (Rp 3 Juta).", 'success');
             } else {
                 logMessage("Uang kas tidak cukup untuk perbaikan sabotase!", 'danger');
                 handleEventAction('sabotage_destroy', 'Hancur');
@@ -1660,39 +1684,39 @@ function handleEventAction(act, choiceText = '') {
                 gameState.businesses[targetBiz]--;
                 logMessage(`Bisnis '${targetBiz}' hancur disabotase mafia AI!`, 'danger');
             } else {
-                const loss = Math.min(gameState.money, 10000000);
+                const loss = Math.min(gameState.money, 3000000);
                 gameState.money -= loss;
                 logMessage(`Tidak ada bisnis aktif. Sabotase AI memotong kas sebesar Rp ${loss.toLocaleString('id-ID')}.`, 'danger');
             }
             break;
         case 'buy_blackmarket':
-            if (gameState.money >= 20000000) {
+            if (gameState.money >= 10000000) {
                 audioFX.playSuccess();
-                gameState.money -= 20000000;
-                gameState.weapons += 2;
+                gameState.money -= 10000000;
+                gameState.weapons = (gameState.weapons || 0) + 2;
                 logMessage("Membeli pasokan senjata gelap borongan (+50 PWR).", 'success');
             } else {
-                alert("Uang kas tidak cukup (butuh Rp 20 Juta)! Transaksi dibatalkan.");
+                alert("Uang kas tidak cukup (butuh Rp 10 Juta)! Transaksi dibatalkan.");
                 logMessage("Gagal membeli senjata gelap karena kas kurang.", 'danger');
             }
             break;
         case 'ott_destroy':
-            if (gameState.money >= 10000000) {
+            if (gameState.money >= 5000000) {
                 audioFX.playSuccess();
-                gameState.money -= 10000000;
+                gameState.money -= 5000000;
                 gameState.heat = Math.max(0, gameState.heat - 20);
-                logMessage("Dokumen rahasia dimusnahkan. Biaya kurir Rp 10 Juta, Heat -20%.", 'success');
+                logMessage("Dokumen rahasia dimusnahkan. Biaya kurir Rp 5 Juta, Heat -20%.", 'success');
             } else {
                 logMessage("Kas kurang untuk bayar kurir pemusnah dokumen!", 'danger');
             }
             break;
         case 'ott_bribe':
-            if (gameState.money >= 50000000) {
-                gameState.money -= 50000000;
+            if (gameState.money >= 20000000) {
+                gameState.money -= 20000000;
                 if (Math.random() > 0.25) {
                     audioFX.playSuccess();
                     gameState.heat = 0;
-                    logMessage("Penyidik KPK berhasil disogok Rp 50 Juta! Heat bersih 0%.", 'success');
+                    logMessage("Penyidik KPK berhasil disogok Rp 20 Juta! Heat bersih 0%.", 'success');
                 } else {
                     alert("Sogokan ditolak penyidik jujur! Anda ditangkap!");
                     triggerPlayerJail();
@@ -1700,17 +1724,17 @@ function handleEventAction(act, choiceText = '') {
             } else alert("Uang kas tidak cukup untuk menyogok penyidik KPK!");
             break;
         case 'trait_pay':
-            if (gameState.money >= 8000000) {
+            if (gameState.money >= 4000000) {
                 audioFX.playSuccess();
-                gameState.money -= 8000000;
-                logMessage("Membayar informan Rp 8 Juta untuk bungkam.", 'success');
+                gameState.money -= 4000000;
+                logMessage("Membayar informan Rp 4 Juta untuk bungkam.", 'success');
             } else {
-                logMessage("Uang kurang! Bocoran lokasi kas membuat modal hilang Rp 5 Juta.", 'danger');
-                gameState.money = Math.max(0, gameState.money - 5000000);
+                logMessage("Uang kurang! Bocoran lokasi kas membuat modal hilang Rp 3 Juta.", 'danger');
+                gameState.money = Math.max(0, gameState.money - 3000000);
             }
             break;
         case 'trait_kill':
-            if (gameState.members.length > 0) {
+            if (gameState.members && gameState.members.length > 0) {
                 removeRandomMembers(1, 1);
                 logMessage("Pengkhianat dieksekusi mati. 1 Pasukan hilang.", 'danger');
             } else {
@@ -1718,10 +1742,10 @@ function handleEventAction(act, choiceText = '') {
             }
             break;
         case 'media_bribe':
-            if (gameState.money >= 12000000) {
+            if (gameState.money >= 6000000) {
                 audioFX.playSuccess();
-                gameState.money -= 12000000;
-                logMessage("Suap wartawan Rp 12 Juta sukses.", 'success');
+                gameState.money -= 6000000;
+                logMessage("Suap wartawan Rp 6 Juta sukses.", 'success');
             } else {
                 logMessage("Uang kurang untuk suap wartawan! Media merilis berita, Heat +10%.", 'danger');
                 gameState.heat = Math.min(100, gameState.heat + 10);
@@ -1732,9 +1756,9 @@ function handleEventAction(act, choiceText = '') {
             logMessage("Menteror media! Heat Level +20%.", 'danger');
             break;
         case 'social_aid':
-            if (gameState.money >= 10000000) {
+            if (gameState.money >= 5000000) {
                 audioFX.playSuccess();
-                gameState.money -= 10000000;
+                gameState.money -= 5000000;
                 gameState.heat = Math.max(0, gameState.heat - 10);
                 logMessage("Membagi sembako ke warga. Heat -10%.", 'success');
             } else {
@@ -1747,8 +1771,8 @@ function handleEventAction(act, choiceText = '') {
             break;
         case 'alliance_yes':
             audioFX.playSuccess();
-            gameState.money += 30000000;
-            logMessage("Aliansi Ormas diterima! Mendapatkan dana Rp 30 Juta.", 'success');
+            gameState.money += 15000000;
+            logMessage("Aliansi Ormas diterima! Mendapatkan dana Rp 15 Juta.", 'success');
             break;
         case 'alliance_no':
             removeRandomMembers(1, 1);
@@ -1756,8 +1780,8 @@ function handleEventAction(act, choiceText = '') {
             break;
         case 'mentor_money':
             audioFX.playSuccess();
-            gameState.money += 100000000;
-            logMessage("Suntikan modal mentor diterima! Kas +Rp 100 Juta.", 'success');
+            gameState.money += 50000000;
+            logMessage("Suntikan modal mentor diterima! Kas +Rp 50 Juta.", 'success');
             break;
         default:
             logMessage("Event selesai tanpa dampak langsung.", 'info');
@@ -1782,7 +1806,7 @@ window.resetGameProgress = async function() {
 
 function getProvinceObj(pId) { return PROVINCES.find(p => p.id === pId); }
 
-// LOGITAS OPERASIONAL DENGAN SYNC CLOUD
+// LOGITAS OPERASIONAL
 function logMessage(msg, type = '') {
     if (!currentUser) return;
     if (!gameState.gameLogs) gameState.gameLogs = [];
